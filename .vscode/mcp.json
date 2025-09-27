@@ -1,0 +1,12 @@
+{
+  "servers": {
+    "mastra": {
+      "command": "/Users/ishankhire/.nvm/versions/node/v22.20.0/bin/npx",
+      "args": ["-y", "@mastra/mcp-docs-server"],
+      "type": "stdio",
+      "env": {
+        "PATH": "/Users/ishankhire/.nvm/versions/node/v22.20.0/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/Library/Frameworks/Python.framework/Versions/3.13/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/Users/ishankhire/Library/Application Support/Code/User/globalStorage/github.copilot-chat/debugCommand"
+      }
+    }
+  }
+}

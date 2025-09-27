@@ -2,6 +2,11 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+1. npm i 
+2. copy .env
+3. npm i mastra --global
+4. mastra dev
+
 First, run the development server:
 
 ```bash
@@ -19,6 +24,12 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## MCP Instructions
+
+GITHUB_MCP_URL=https://api.githubcopilot.com/mcp/
+GITHUB_MCP_TOKEN=your_token
+Generate a personal access token by going to settings --> develop settings and add the access token to your .env file 
 
 ## Learn More
 
