@@ -2,38 +2,20 @@
 
 import React from "react";
 import Diagram from "./components/Diagram";
-import { DiagramData } from "./components/types";
-import axios from "axios";
-
-const datasets: DiagramData[] = [
-  {
-    title: "GitGood",
-    file: "nodes.py",
-    summary: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-    imports: ["os", "re", "yaml"],
-    functions: [
-      {
-        name: "get_content_for_indices",
-        signature: "get_content_for_indices(files_data, indices)",
-        description: "Gets code snippets based on indices.",
-      },
-    ],
-    classes: [
-      { name: "FetchRepo(Node)", popupFunctionName: "prep(self, shared)", nestedExplanation: "explanation for asdfj" } as import("./components/types").ClassData,
-      { name: "IdentifyAbstractions(Node)", popupFunctionName: "prep(self, shared)", description: "Identifies abstractions." } as import("./components/types").ClassData,
-      { name: "AnalyzeRelationships(Node)", popupFunctionName: "exec(self, prep_res)", nestedClass: "prep(self, shared)", nestedExplanation: "explanation for yippee" } as import("./components/types").ClassData,
-    ],
-    // 👇 new stuff
-    constants: ["PI = 3.14", "MAX_USERS = 100"],
-    notes: ["This file handles repo fetching", "Abstraction detection is experimental"],
-  },
-];
-
+import Sidebar from "./components/Sidebar";
+import { Repository, CurrentView } from "./components/types";
+import { sampleRepositories, sampleDiagrams, UI_CONSTANTS, API_CONFIG, PROCESS_REPOSITORY_ID } from "./components/constants";
+import { ApiService, RepositoryService, UIUtils, ErrorHandler } from "./components/utils";
 
 export default function App() {
   const [linkInput, setLinkInput] = React.useState("");
   const [output, setOutput] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
+  const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
+  const [repositories, setRepositories] = React.useState<Repository[]>(sampleRepositories);
+  const [currentRepo, setCurrentRepo] = React.useState<string>("");
+  const [currentView, setCurrentView] = React.useState<CurrentView | null>(null);
 
   const handleSubmit = async () => {
     if (!linkInput.trim()) {
@@ -45,132 +27,255 @@ export default function App() {
     setOutput("Processing...");
 
     try {
-      const runId = "test";
-      const baseUrl = "http://localhost:4111/api/workflows/sequentialPipeline";
+      const runId = API_CONFIG.defaultRunId;
 
       // Step 1: Create a run
-      await axios.post(`${baseUrl}/create-run?runId=${runId}`, {});
+      await ApiService.createRun(runId);
       setOutput("Run created successfully...");
 
       // Step 2: Start the run
-      await axios.post(`${baseUrl}/start?runId=${runId}`, {
-        inputData: {
-          repoUrl: linkInput
-        },
-        runtimeContext: {}
-      }, {
-        headers: {
-          "Content-Type": "application/json"
-        }
-      });
+      await ApiService.startRun(runId, linkInput);
       setOutput("Run started successfully. Polling for results...");
 
-      // Step 3: Poll execution result until status is no longer "running"
-      const pollExecutionResult = async () => {
-        const response = await axios.get(`${baseUrl}/runs/${runId}/execution-result`);
-        
-        if (response.data.status === "running") {
-          setOutput("Run is still running...");
-          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
-          return pollExecutionResult();
-        }
-        return response.data;
-      };
-
-      const finalResult = await pollExecutionResult();
-      setOutput(JSON.stringify(finalResult.result.abstractions, null, 2));
+      // Step 3: Poll execution result
+      const finalResult = await ApiService.pollExecutionResult(runId, setOutput);
+      setOutput(JSON.stringify(finalResult, null, 2));
+      
+      // Create repository from result
+      const newRepo = RepositoryService.createRepositoryFromUrl(linkInput, finalResult);
+      setRepositories(prev => [...prev, newRepo]);
+      setCurrentRepo(newRepo.id);
       
     } catch (error) {
-      if (error instanceof Error) {
-        setOutput(`Error: ${error.message}`);
-      } else {
-        setOutput("An unknown error occurred.");
-      }
+      setOutput(ErrorHandler.handleApiError(error));
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleNavigation = (repoId: string, chapterPath?: string) => {
+    setCurrentRepo(repoId);
+    if (chapterPath) {
+      setCurrentView({ repo: repoId, chapter: chapterPath });
+    } else {
+      setCurrentView({ repo: repoId, chapter: "" });
+    }
+    setSidebarOpen(false);
+  };
+
   const renderOutput = () => {
     if (!output) {
       return (
-        <div className="text-[#9C84B0] italic">
+        <div className="text-[#491b72] italic font-mono">
           Output will appear here...
         </div>
       );
     }
 
-    // Try to parse as JSON for better formatting
-    try {
-      const parsed = JSON.parse(output);
+    const { isJson, formatted } = UIUtils.formatOutput(output);
+    
+    return isJson ? (
+      <pre className="whitespace-pre-wrap text-sm font-mono bg-[#ececec] p-4 rounded-3xl overflow-x-auto text-[#491b72] shadow-[4px_4px_25px_#00000040]">
+        {formatted}
+      </pre>
+    ) : (
+      <div className="whitespace-pre-wrap text-sm bg-[#ececec] p-4 rounded-3xl text-[#491b72] font-mono shadow-[4px_4px_25px_#00000040]">
+        {formatted}
+      </div>
+    );
+  };
+
+  const renderCurrentView = () => {
+    if (!currentView) {
       return (
-        <pre className="whitespace-pre-wrap text-sm font-mono bg-transparent p-4 rounded-md overflow-x-auto">
-          {JSON.stringify(parsed, null, 2)}
-        </pre>
-      );
-    } catch {
-      // If not JSON, display as regular text with proper formatting
-      return (
-        <div className="whitespace-pre-wrap text-1 bg-transparent p-1 rounded-md">
-          {output}
+        <div className="text-center py-12">
+          <h2 className="text-2xl font-bold text-[#491b72] mb-4">
+            Welcome to {UI_CONSTANTS.appTitle}
+          </h2>
+          <p className="text-[#491b72] font-mono">
+            Select a repository and chapter from the sidebar to get started.
+          </p>
         </div>
       );
     }
+
+    // Check if this is the Process Repository page
+    if (currentView.repo === PROCESS_REPOSITORY_ID) {
+      return (
+        <div className="space-y-6">
+          <h1 className="text-3xl font-bold text-[#491b72]">Process Repository!</h1>
+          <p className="text-[#491b72] font-mono">
+            Enter a repository URL below to analyze and generate documentation chapters.
+          </p>
+          
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="link-input" className="block text-sm font-bold text-[#491b72] mb-2 font-mono">
+                Enter Repository Link:
+              </label>
+              <div className="flex gap-2">
+                <input
+                  id="link-input"
+                  type="text"
+                  value={linkInput}
+                  onChange={(e) => setLinkInput(e.target.value)}
+                  placeholder="https://github.com/username/repository"
+                  className="flex-1 px-4 py-3 border-[3px] border-white rounded-3xl shadow-[2px_2px_15px_#00000020] focus:outline-none focus:shadow-[4px_4px_25px_#00000040] transition-shadow font-mono text-[#491b72] bg-[#ececec]"
+                  disabled={isLoading}
+                />
+                <button
+                  onClick={handleSubmit}
+                  disabled={isLoading}
+                  className="px-6 py-3 bg-[linear-gradient(103deg,rgba(120,127,227,1)_0%,rgba(128,66,182,1)_100%)] text-white rounded-3xl hover:shadow-[6px_6px_30px_#00000060] focus:outline-none focus:shadow-[6px_6px_30px_#00000060] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 font-bold shadow-[4px_4px_25px_#00000040]"
+                >
+                  {isLoading ? "Processing..." : "Process"}
+                </button>
+              </div>
+            </div>
+
+            {/* Output Section */}
+            {output && (
+              <div>
+                <label className="block text-sm font-bold text-[#491b72] mb-2 font-mono">
+                  Processing Output:
+                </label>
+                <div className="w-full min-h-[100px] border-[3px] border-white rounded-3xl shadow-[2px_2px_15px_#00000020]">
+                  {renderOutput()}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    const repo = RepositoryService.findRepositoryById(repositories, currentView.repo);
+    if (!repo) return <div className="text-[#491b72] font-mono">Repository not found</div>;
+
+    if (!currentView.chapter) {
+      // Show repository overview
+      return (
+        <div className="space-y-6">
+          <h1 className="text-3xl font-bold text-[#491b72]">{repo.title}</h1>
+          <p className="text-[#491b72] font-mono">Repository Overview</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {repo.chapters.map((chapter) => (
+              <div
+                key={chapter.id}
+                onClick={() => handleNavigation(repo.id, chapter.path)}
+                className="bg-[#ececec] p-6 rounded-3xl shadow-[4px_4px_25px_#00000040] hover:shadow-[6px_6px_30px_#00000060] cursor-pointer transition-all duration-300 border-[3px] border-white"
+              >
+                <h3 className="font-bold text-[#491b72] text-lg mb-2">{chapter.title}</h3>
+                <p className="text-sm text-[#491b72] font-mono">Click to view this chapter</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // Show specific chapter
+    const chapter = RepositoryService.findChapterByPath(repo, currentView.chapter);
+    if (!chapter) return <div className="text-[#491b72] font-mono">Chapter not found</div>;
+
+    const chapterContent = UIUtils.getChapterContent(chapter.path);
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center space-x-2 text-sm text-[#491b72] font-mono">
+          <button 
+            onClick={() => handleNavigation(repo.id)}
+            className="hover:text-purple-800 transition-colors"
+          >
+            {repo.title}
+          </button>
+          <span>/</span>
+          <span className="font-bold">{chapter.title}</span>
+        </div>
+        
+        <h1 className="text-3xl font-bold text-[#491b72]">{chapter.title}</h1>
+        
+        <div className="bg-[#ececec] rounded-3xl shadow-[4px_4px_25px_#00000040] p-6 border-[3px] border-white">
+          <h2 className="text-xl font-bold mb-4 text-[#491b72]">Content for {chapter.title}</h2>
+          <p className="text-[#491b72] mb-4 font-mono">
+            This is the content for {chapter.title} in the {repo.title} repository.
+          </p>
+          
+          {/* Dynamic chapter content */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-bold text-[#491b72]">{chapterContent.title}</h3>
+            <p className="text-[#491b72] font-mono">
+              {chapterContent.description}
+            </p>
+            {chapterContent.items.length > 0 && (
+              <ul className="list-disc list-inside text-[#491b72] space-y-2 font-mono">
+                {chapterContent.items.map((item, index) => (
+                  <li key={index}>{item}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-        {/* Full-screen background gradient */}
-  <div className="fixed inset-0 w-full h-full -z-10 bg-[linear-gradient(100deg,rgba(216,213,255,1)_9%,rgba(225,186,213,1)_100%)] border-[5px] border-white rounded-2xl"/>
-  <div className="inset-0 -z-10 h-full w-full bg-[radial-gradient(#e5e7eb_2px,transparent_2px)] [background-size:32px_32px]"></div>
-      {/* Title Banner */}
-      <div className="fixed left-0 right-0 top-0 bg-white py-5 flex justify-center items-center mb-4 shadow-[0_2px_8px_#00000010] z-10">
-        <h2 className="text-xl font-bold text-[#491b72]">
-          GitGood <span className="font-normal">- Make GitHub Repositories Understandable</span>
-        </h2>
-      </div>
-      {/* Link Input Section */}
-      <div className="mb-6 space-y-4 mt-20">
-        <div>
-          <label htmlFor="link-input" className="block text-md font-bold text-[#491b72] mb-1">
-            Enter Repository Link:
-          </label>
-          <div className="flex gap-2">
-            <input
-              id="link-input"
-              type="text"
-              value={linkInput}
-              onChange={(e) => setLinkInput(e.target.value)}
-              placeholder="https://github.com/username/repository"
-              className="text-[#491b72] bg-[#ffffff] flex-1 px-3 py-2 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              disabled={isLoading}
-            />
-            <button
-              onClick={handleSubmit}
-              disabled={isLoading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-xl bg-[linear-gradient(103deg,rgba(120,127,227,1)_0%,rgba(128,66,182,1)_100%)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? "Processing..." : "Process"}
-            </button>
-          </div>
+    <div className="flex h-screen bg-[linear-gradient(100deg,rgba(216,213,255,1)_9%,rgba(225,186,213,1)_100%)]">
+      {/* Background pattern overlay with white dots */}
+      <div className="fixed inset-0 -z-10 h-full w-full bg-[radial-gradient(white_2px,transparent_2px)] [background-size:32px_32px]"></div>
+      
+      {/* Sidebar */}
+      <Sidebar
+        repositories={repositories}
+        currentRepo={currentRepo}
+        currentChapter={currentView?.chapter}
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
+        onNavigate={handleNavigation}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+      />
+      
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col lg:ml-0">
+        {/* Header with hamburger menu */}
+        <div className="bg-[linear-gradient(103deg,rgba(120,127,227,1)_0%,rgba(128,66,182,1)_100%)] shadow-[4px_4px_25px_#00000040] border-b-[3px] border-white px-4 py-3 flex items-center justify-between lg:justify-center">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden p-2 rounded-md hover:bg-white/20 transition-colors"
+          >
+            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          
+          <h1 className="text-xl font-bold text-white">
+            {UI_CONSTANTS.appTitle}
+          </h1>
+          
+          <div className="w-10 lg:hidden"></div>
         </div>
 
-        {/* Output Section */}
-        <div>
-          <label className="block text-md font-bold text-[#491b72] mb-1">
-            Output:
-          </label>
-          <div className="text-[#491b72] px-3 py-2 bg-[#ececec] w-full min-h-[100px] border border-gray-300 rounded-xl shadow-[4px_4px_25px_#00000040]">
-            {renderOutput()}
+        {/* Content Area */}
+        <div className="flex-1 overflow-auto">
+          <div className="p-6 max-w-4xl mx-auto space-y-6">
+            {/* Main content in white container */}
+            <div className="bg-[#ececec] rounded-3xl shadow-[4px_4px_25px_#00000040] border-[3px] border-white p-6">
+              {renderCurrentView()}
+            </div>
+
+            {/* Diagram outside the white container - directly on purple background */}
+            {currentView && currentView.repo !== PROCESS_REPOSITORY_ID && sampleDiagrams.length > 0 && (
+              <div>
+                <h2 className="text-xl font-bold mb-4 text-[#491b72]">Code Diagram</h2>
+                {sampleDiagrams.map((d, i) => (
+                  <Diagram key={i} inputData={d} />
+                ))}
+              </div>
+            )}
           </div>
         </div>
-      </div>
-
-      {/* Diagram Section */}
-      <div>
-        {datasets.map((d, i) => (
-          <Diagram key={i} inputData={d} />
-        ))}
       </div>
     </div>
   );
