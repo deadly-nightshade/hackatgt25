@@ -5,10 +5,8 @@ import { LibSQLStore } from '@mastra/libsql';
 
 export const OrderChaptersAgent = new Agent({
     name: 'Order Chapters Agent',
-    instructions: 
-    `Hey
-    `,
-  model: google('gemini-2.5-pro'),
+    instructions: `You are an expert technical documentation organizer. Your role is to analyze identified abstractions and their relationships to determine the optimal order for presenting them in educational chapters. You create logical learning progressions that build understanding step by step.`,
+    model: google('gemini-2.5-pro'),
   tools: {},
   memory: new Memory({
     storage: new LibSQLStore({
