@@ -3,8 +3,8 @@ import { Agent } from '@mastra/core/agent';
 import { Memory } from '@mastra/memory';
 import { LibSQLStore } from '@mastra/libsql';
 
-export const IdentifyAbstractionAgent = new Agent({
-    name: 'Identify Abstractions Agent',
+export const analyseRelationsAgent = new Agent({
+    name: 'Analyse Relations Agent',
     instructions: 
     `Hey
     `,
