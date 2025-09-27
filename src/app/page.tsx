@@ -7,7 +7,7 @@ import axios from "axios";
 
 const datasets: DiagramData[] = [
   {
-    title: "PocketFlow-Tutorial-Codebase-Knowledge",
+    title: "GitGood",
     file: "nodes.py",
     summary: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
     imports: ["os", "re", "yaml"],
@@ -19,9 +19,9 @@ const datasets: DiagramData[] = [
       },
     ],
     classes: [
-      { name: "FetchRepo(Node)", nestedClass: "asdfj(Node)", nestedExplanation: "explanation for asdfj" } as import("./components/types").ClassData,
-      { name: "IdentifyAbstractions(Node)", description: "Identifies abstractions." } as import("./components/types").ClassData,
-      { name: "AnalyzeRelationships(Node)", nestedClass: "prep(self, shared)", nestedExplanation: "explanation for yippee" } as import("./components/types").ClassData,
+      { name: "FetchRepo(Node)", popupFunctionName: "prep(self, shared)", nestedExplanation: "explanation for asdfj" } as import("./components/types").ClassData,
+      { name: "IdentifyAbstractions(Node)", popupFunctionName: "prep(self, shared)", description: "Identifies abstractions." } as import("./components/types").ClassData,
+      { name: "AnalyzeRelationships(Node)", popupFunctionName: "exec(self, prep_res)", nestedClass: "prep(self, shared)", nestedExplanation: "explanation for yippee" } as import("./components/types").ClassData,
     ],
     // 👇 new stuff
     constants: ["PI = 3.14", "MAX_USERS = 100"],
@@ -94,7 +94,7 @@ export default function App() {
   const renderOutput = () => {
     if (!output) {
       return (
-        <div className="text-gray-500 italic">
+        <div className="text-[#9C84B0] italic">
           Output will appear here...
         </div>
       );
@@ -104,14 +104,14 @@ export default function App() {
     try {
       const parsed = JSON.parse(output);
       return (
-        <pre className="whitespace-pre-wrap text-sm font-mono bg-gray-50 p-4 rounded-md overflow-x-auto">
+        <pre className="whitespace-pre-wrap text-sm font-mono bg-transparent p-4 rounded-md overflow-x-auto">
           {JSON.stringify(parsed, null, 2)}
         </pre>
       );
     } catch {
       // If not JSON, display as regular text with proper formatting
       return (
-        <div className="whitespace-pre-wrap text-sm bg-gray-50 p-4 rounded-md">
+        <div className="whitespace-pre-wrap text-1 bg-transparent p-1 rounded-md">
           {output}
         </div>
       );
@@ -124,16 +124,15 @@ export default function App() {
   <div className="fixed inset-0 w-full h-full -z-10 bg-[linear-gradient(100deg,rgba(216,213,255,1)_9%,rgba(225,186,213,1)_100%)] border-[5px] border-white rounded-2xl"/>
   <div className="inset-0 -z-10 h-full w-full bg-[radial-gradient(#e5e7eb_2px,transparent_2px)] [background-size:32px_32px]"></div>
       {/* Title Banner */}
-      <div className=" left-0 right-0 top-0 bg-white py-5 flex justify-center items-center mb-4 shadow-[0_2px_8px_#00000010] z-10">
+      <div className="fixed left-0 right-0 top-0 bg-white py-5 flex justify-center items-center mb-4 shadow-[0_2px_8px_#00000010] z-10">
         <h2 className="text-xl font-bold text-[#491b72]">
-          Dumb it Down
-          {/*The-Pocket / {inputData.title}*/}
+          GitGood <span className="font-normal">- Make GitHub Repositories Understandable</span>
         </h2>
       </div>
       {/* Link Input Section */}
-      <div className="mb-6 space-y-4">
+      <div className="mb-6 space-y-4 mt-20">
         <div>
-          <label htmlFor="link-input" className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="link-input" className="block text-md font-bold text-[#491b72] mb-1">
             Enter Repository Link:
           </label>
           <div className="flex gap-2">
@@ -143,13 +142,13 @@ export default function App() {
               value={linkInput}
               onChange={(e) => setLinkInput(e.target.value)}
               placeholder="https://github.com/username/repository"
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="text-[#491b72] bg-[#ffffff] flex-1 px-3 py-2 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               disabled={isLoading}
             />
             <button
               onClick={handleSubmit}
               disabled={isLoading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-blue-600 text-white rounded-xl bg-[linear-gradient(103deg,rgba(120,127,227,1)_0%,rgba(128,66,182,1)_100%)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? "Processing..." : "Process"}
             </button>
@@ -158,10 +157,10 @@ export default function App() {
 
         {/* Output Section */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-md font-bold text-[#491b72] mb-1">
             Output:
           </label>
-          <div className="w-full min-h-[100px] border border-gray-300 rounded-md shadow-sm">
+          <div className="text-[#491b72] px-3 py-2 bg-[#ececec] w-full min-h-[100px] border border-gray-300 rounded-xl shadow-[4px_4px_25px_#00000040]">
             {renderOutput()}
           </div>
         </div>

@@ -20,12 +20,6 @@ const Diagram: React.FC<DiagramProps> = ({ inputData }) => {
   {/* Full-screen background gradient */}
   <div className="fixed inset-0 w-full h-full -z-10 bg-[linear-gradient(100deg,rgba(216,213,255,1)_9%,rgba(225,186,213,1)_100%)] border-[5px] border-white rounded-2xl"/>
   <div className="absolute inset-0 -z-10 h-full w-full bg-[radial-gradient(#e5e7eb_2px,transparent_2px)] [background-size:32px_32px]"></div>
-      {/* Title Banner */}
-      <div className="fixed left-0 right-0 top-0 bg-white py-5 flex justify-center items-center mb-4 shadow-[0_2px_8px_#00000010] z-10">
-        <h2 className="text-xl font-bold text-[#491b72]">
-          The-Pocket / {inputData.title}
-        </h2>
-      </div>
 
       {/* File */}
       <div className="mb-2 flex flex-col items-center">
@@ -109,13 +103,17 @@ const Diagram: React.FC<DiagramProps> = ({ inputData }) => {
               isOpen: openCards.includes(cls.name),
               onClick: () =>
                 setOpenCards((prev) => {
+                // Close all function popups from previously open classes
+                  const allFunctionNames = (inputData.classes ?? [])
+                    .map((c: any) => c.popupFunctionName ?? "function_name()")
+                    .filter(Boolean);
                   const othersOnLine = (inputData.classes ?? [])
                     .map((c: any, idx: number) => (idx === i ? null : c?.name))
                     .filter(Boolean) as string[];
                   const currentlyOpen = prev.includes(cls.name);
-                  const pruned = prev.filter(
-                    (name) => !othersOnLine.includes(name)
-                  );
+                  let pruned = prev.filter((name) => !othersOnLine.includes(name));
+                  // Remove all function popups
+                  pruned = pruned.filter((name) => !allFunctionNames.includes(name));
                   return currentlyOpen
                     ? pruned.filter((name) => name !== cls.name)
                     : [cls.name, ...pruned];
@@ -126,6 +124,8 @@ const Diagram: React.FC<DiagramProps> = ({ inputData }) => {
           {/* Class popups */}
           {(inputData.classes ?? []).map((cls: any) => {
             if (!openCards.includes(cls.name)) return null;
+            const functionName = cls.popupFunctionName ?? "function_name()";
+            const functionTitle = functionName.replace(/\(.*\)/, "");
             const nestedClass = cls.nestedClass ?? "Blahblah(Node)";
             const nestedClassTitle = nestedClass.replace(/\(.*\)/, "");
             const nestedExplanation =
@@ -147,16 +147,32 @@ const Diagram: React.FC<DiagramProps> = ({ inputData }) => {
                       }
                       nestedItems={[
                         {
-                          label: `class ${nestedClass}`,
-                          keyword: "class",
-                          name: nestedClass,
-                          isOpen: openCards.includes(nestedClass),
-                          onClick: () => toggle(nestedClass),
+                          label: `def ${functionName}`,
+                          keyword: "def",
+                          name: functionName,
+                          isOpen: openCards.includes(functionName),
+                          onClick: () => toggle(functionName),
                         },
                       ]}
                     />
                   </div>
                 </div>
+
+                {/* Function popup for function name */}
+                {openCards.includes(functionName) && (
+                  <div
+                    key={functionName + "-popup"}
+                    className="relative w-full flex justify-center"
+                    style={{ marginTop: "1px" }}
+                  >
+                    <div className="w-[350px]">
+                      <Card
+                        title={functionTitle}
+                        description={`explanation for ${functionTitle}`}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {/* Nested class popup */}
                 {openCards.includes(nestedClass) && (
