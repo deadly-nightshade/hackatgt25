@@ -28,6 +28,7 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 ## MCP Instructions
 
 GITHUB_MCP_URL=https://api.githubcopilot.com/mcp/
+GITHUB_MCP_TOKEN=your_token
 Generate a personal access token by going to settings --> develop settings and add the access token to your .env file 
 
 ## Learn More
