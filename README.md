@@ -25,6 +25,11 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## MCP Instructions
+
+GITHUB_MCP_URL=https://api.githubcopilot.com/mcp/
+Generate a personal access token by going to settings --> develop settings and add the access token to your .env file 
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

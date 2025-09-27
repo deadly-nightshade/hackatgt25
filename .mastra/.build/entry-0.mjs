@@ -6,8 +6,11 @@ import { z } from 'zod';
 import { google } from '@ai-sdk/google';
 import { Agent } from '@mastra/core/agent';
 import { Memory } from '@mastra/memory';
+import { MCPClient } from '@mastra/mcp';
+import path from 'node:path';
+import fs from 'node:fs';
 
-createStep({
+const fetchRepoStep = createStep({
   id: "fetch-repo-step",
   description: "Fetch Repo Step",
   inputSchema: z.object({
@@ -63,7 +66,7 @@ const sequentialPipeline = createWorkflow({
   outputSchema: z.object({
     finalOutput: z.string()
   })
-});
+}).then(fetchRepoStep);
 sequentialPipeline.commit();
 
 const analyseFileAgent = new Agent({
@@ -94,18 +97,54 @@ const analyseRelationsAgent = new Agent({
   })
 });
 
-const fetchRepoAgent = new Agent({
-  name: "Fetch Repo Agent",
-  instructions: `Hey
-    `,
+let mcp = null;
+function getGithubMcp() {
+  if (mcp) return mcp;
+  const url = process.env.GITHUB_MCP_URL;
+  if (!url) throw new Error("GITHUB_MCP_URL is missing in .env");
+  const headers = process.env.GITHUB_MCP_TOKEN ? { Authorization: `Bearer ${process.env.GITHUB_MCP_TOKEN}` } : void 0;
+  mcp = new MCPClient({
+    servers: {
+      github: {
+        url: new URL(url),
+        requestInit: headers ? { headers } : void 0
+        // for streamable HTTP
+        // eventSourceInit: headers ? { headers } : undefined, // for SSE fallback
+      }
+    }
+  });
+  return mcp;
+}
+async function getGithubTools() {
+  return await getGithubMcp().getTools();
+}
+
+const dbDir = path.resolve(process.cwd(), ".mastra");
+const dbPath = path.join(dbDir, "mastra.db");
+if (!fs.existsSync(dbDir)) {
+  fs.mkdirSync(dbDir, { recursive: true });
+}
+const store = new LibSQLStore({
+  // Local libsql file; it will be created if missing
+  url: `file:${dbPath}`,
+  authToken: process.env.LIBSQL_AUTH_TOKEN
+  // not needed for local file
+});
+const memory = new Memory({ storage: store });
+
+const githubTools = await getGithubTools();
+const repoAnalyst = new Agent({
+  name: "Repo Analyst",
+  instructions: `
+    You analyze a GitHub repository at a high level.
+    You will later use tools to list files and read manifests,
+    then summarize key components and abstractions in plain English.
+  `,
   model: google("gemini-2.5-pro"),
-  tools: {},
-  memory: new Memory({
-    storage: new LibSQLStore({
-      url: "file:../mastra.db"
-      // path is relative to the .mastra/output directory
-    })
-  })
+  tools: {
+    ...githubTools
+  },
+  memory
 });
 
 const IdentifyAbstractionAgent = new Agent({
@@ -156,7 +195,7 @@ const mastra = new Mastra({
   },
   //weatherWorkflow
   agents: {
-    fetchRepoAgent,
+    repoAnalyst,
     IdentifyAbstractionAgent,
     analyseRelationsAgent,
     OrderChaptersAgent,
@@ -174,4 +213,4 @@ const mastra = new Mastra({
   })
 });
 
-export { mastra };
+export { mastra, memory };
