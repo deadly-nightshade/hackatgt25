@@ -168,3 +168,18 @@ const Diagram: React.FC<DiagramProps> = ({ inputData }) => {
                     <div className="w-[350px]">
                       <Card
                         title={nestedClassTitle}
+                        description={nestedExplanation}
+                      />
+                    </div>
+                  </div>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Diagram;
