@@ -2,6 +2,11 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+1. npm i 
+2. copy .env
+3. npm i mastra --global
+4. mastra dev
+
 First, run the development server:
 
 ```bash
