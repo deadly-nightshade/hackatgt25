@@ -21,9 +21,9 @@ When analyzing relationships:
 - Exclude trivial or non-important relationships
 - Use simple, descriptive labels like "Manages", "Uses", "Inherits", "Configures"
 
-Format outputs as valid YAML with:
+Format outputs as valid JSON with:
 - summary: Brief project explanation with markdown formatting (**bold**, *italic*)  
-- relationships: List of from/to abstraction indices with descriptive labels
+- relationships: Array of objects with from/to abstraction indices and descriptive labels
 
 Always ensure the output is well-structured and beginner-friendly.
     `,
