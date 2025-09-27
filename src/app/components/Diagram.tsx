@@ -16,10 +16,10 @@ const Diagram: React.FC<DiagramProps> = ({ inputData }) => {
     );
 
   return (
-  <div className="relative w-full min-h-screen flex flex-col items-center p-10 pt-28">
-  {/* Full-screen background gradient */}
-  <div className="fixed inset-0 w-full h-full -z-10 bg-[linear-gradient(100deg,rgba(216,213,255,1)_9%,rgba(225,186,213,1)_100%)] border-[5px] border-white rounded-2xl"/>
-  <div className="absolute inset-0 -z-10 h-full w-full bg-[radial-gradient(#e5e7eb_2px,transparent_2px)] [background-size:32px_32px]"></div>
+    <div className="relative w-full min-h-[600px] flex flex-col items-center p-6 pt-8">
+      {/* Background gradient - constrained to component area */}
+      <div className="absolute inset-0 w-full h-full -z-10 bg-[linear-gradient(100deg,rgba(216,213,255,1)_9%,rgba(225,186,213,1)_100%)] border-[5px] border-white rounded-2xl"/>
+      <div className="absolute inset-0 -z-10 h-full w-full bg-[radial-gradient(#e5e7eb_2px,transparent_2px)] [background-size:32px_32px] rounded-2xl"></div>
 
       {/* File */}
       <div className="mb-2 flex flex-col items-center">
@@ -33,15 +33,15 @@ const Diagram: React.FC<DiagramProps> = ({ inputData }) => {
       {/* Connecting line to summary - now below the file card */}
       <div className="w-0.5 h-16 bg-white mx-auto" style={{marginTop: "-8px", marginBottom: "-20px"}}></div>
 
-      {/* Summary */}
-      <div className="mb-12">
-        <div className="bg-[#ececec] rounded-3xl shadow-[4px_4px_25px_#00000040] px-6 py-4 text-[#491b72] font-mono text-base w-[1177px] text-left">
+      {/* Summary - made responsive */}
+      <div className="mb-12 max-w-full px-4">
+        <div className="bg-[#ececec] rounded-3xl shadow-[4px_4px_25px_#00000040] px-6 py-4 text-[#491b72] font-mono text-base max-w-[1177px] w-full text-left">
           {inputData.summary}
         </div>
       </div>
 
-      {/* Main row: imports | functions | classes */}
-      <div className="flex justify-center items-start w-300 relative">
+      {/* Main row: imports | functions | classes - made responsive */}
+      <div className="flex justify-center items-start w-full max-w-6xl relative flex-wrap lg:flex-nowrap gap-4 lg:gap-0">
         {/* Imports column */}
         <div className="flex flex-col items-center relative">
           <Card
@@ -56,7 +56,7 @@ const Diagram: React.FC<DiagramProps> = ({ inputData }) => {
         </div>
 
         {/* Functions column */}
-  <div className="flex flex-col items-center w-full relative mt-[30px]">
+        <div className="flex flex-col items-center w-full relative mt-[30px]">
           <Card
             title="functions"
             className="mt-[25px]"
@@ -103,7 +103,7 @@ const Diagram: React.FC<DiagramProps> = ({ inputData }) => {
               isOpen: openCards.includes(cls.name),
               onClick: () =>
                 setOpenCards((prev) => {
-                // Close all function popups from previously open classes
+                  // Close all function popups from previously open classes
                   const allFunctionNames = (inputData.classes ?? [])
                     .map((c: any) => c.popupFunctionName ?? "function_name()")
                     .filter(Boolean);

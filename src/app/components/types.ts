@@ -35,3 +35,43 @@ export interface DiagramData {
   [key: string]: any; // 👈 allows any other keys
 }
 
+// Sidebar and Navigation interfaces
+export interface Chapter {
+  id: string;
+  title: string;
+  path: string;
+}
+
+export interface Repository {
+  id: string;
+  title: string;
+  chapters: Chapter[];
+}
+
+export interface SidebarProps {
+  repositories: Repository[];
+  currentRepo?: string;
+  currentChapter?: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  onNavigate: (repoId: string, chapterPath?: string) => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
+}
+
+// Application state interfaces
+export interface CurrentView {
+  repo: string;
+  chapter: string;
+}
+
+export interface AppState {
+  linkInput: string;
+  output: string;
+  isLoading: boolean;
+  sidebarOpen: boolean;
+  repositories: Repository[];
+  currentRepo: string;
+  currentView: CurrentView | null;
+}
+
