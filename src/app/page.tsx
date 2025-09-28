@@ -299,6 +299,13 @@ export default function App() {
     setSidebarOpen(false);
   };
 
+  // Function to navigate back to the welcome/landing page
+  const handleBackToHome = () => {
+    setCurrentView(null);
+    setCurrentRepo("");
+    setSidebarOpen(false);
+  };
+
   const renderOutput = () => {
     if (!output) {
       return (
@@ -325,11 +332,13 @@ export default function App() {
     if (!currentView) {
       return (
         <div className="text-center py-12">
-          <h2 className="text-2xl font-bold text-[#491b72] mb-4">
-            Welcome to {UI_CONSTANTS.appTitle}
+          <h2 className="text-4xl font-bold text-[#491b72] mb-4">
+            Welcome to <span className="font-extrabold bg-[linear-gradient(103deg,rgba(120,127,227,1)_0%,rgba(128,66,182,1)_100%)] bg-clip-text text-transparent">GitGood</span>
           </h2>
+          <h3 className="text-2xl font-bold text-[#491b72] mb-10">AI that reads code so you don't have to.</h3>
           <p className="text-[#491b72] font-mono">
-            Select a repository and chapter from the sidebar to get started.
+            Select <span className="font-bold">Process Repository!</span> from the sidebar to get started.
+            <br></br>Or browse previous repositories analyzed by GitGood.
           </p>
         </div>
       );
@@ -528,7 +537,10 @@ export default function App() {
             </svg>
           </button>
           
-          <h1 className="text-xl font-bold text-[#4A1C72]">
+          <h1 
+            className="text-2xl font-bold text-[#4A1C72] cursor-pointer"
+            onClick={handleBackToHome}
+          >
             {UI_CONSTANTS.appTitle}
           </h1>
           
