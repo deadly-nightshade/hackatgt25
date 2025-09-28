@@ -27,24 +27,25 @@ export default function App() {
     setOutput("Processing...");
 
     try {
-      const runId = API_CONFIG.defaultRunId;
+      const runId = API_CONFIG.defaultRunId + "_" + Date.now(); // Unique run ID
 
-      // Step 1: Create a run
-      await ApiService.createRun(runId);
+      // Step 1: Create a run for repository parser workflow
+      await ApiService.createRun(runId, 'repositoryParser');
       setOutput("Run created successfully...");
 
-      // Step 2: Start the run
-      await ApiService.startRun(runId, linkInput);
+      // Step 2: Start the run with repository URL
+      await ApiService.startRun(runId, { repoUrl: linkInput.trim() }, 'repositoryParser');
       setOutput("Run started successfully. Polling for results...");
 
       // Step 3: Poll execution result
-      const finalResult = await ApiService.pollExecutionResult(runId, setOutput);
-      setOutput(JSON.stringify(finalResult, null, 2));
+      const finalResult = await ApiService.pollExecutionResult(runId, setOutput, 'repositoryParser');
       
-      // Create repository from result
-      const newRepo = RepositoryService.createRepositoryFromUrl(linkInput, finalResult);
-      setRepositories(prev => [...prev, newRepo]);
-      setCurrentRepo(newRepo.id);
+      // Display the message from our workflow - it should be in finalResult.message
+      if (finalResult && finalResult.message) {
+        setOutput(finalResult.message);
+      } else {
+        setOutput(JSON.stringify(finalResult, null, 2));
+      }
       
     } catch (error) {
       setOutput(ErrorHandler.handleApiError(error));

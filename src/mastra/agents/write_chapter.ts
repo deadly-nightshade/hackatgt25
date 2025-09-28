@@ -26,7 +26,7 @@ Chapter structure guidelines:
 - Reference related abstractions with proper chapter links
 
 Always prioritize clarity and educational value over technical completeness. Make content accessible to developers new to the codebase.`,
-    model: google('gemini-2.5-pro'),
+    model: google('gemini-2.5-flash'),
     tools: {},
     memory,
 });

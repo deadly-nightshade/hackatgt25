@@ -72,7 +72,11 @@ export const sampleDiagrams: DiagramData[] = [
 
 // API Configuration
 export const API_CONFIG = {
-  baseUrl: "http://localhost:4111/api/workflows/sequentialPipeline",
+  baseUrl: "http://localhost:4111/api/workflows",
+  workflows: {
+    sequential: "sequentialPipeline",
+    repositoryParser: "repositoryParserWorkflow"
+  },
   pollInterval: 2000,
   defaultRunId: "test"
 };

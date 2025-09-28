@@ -10,6 +10,7 @@ import { repoAnalyst } from "../agents/fetch_repo";
 import { IdentifyAbstractionAgent } from "../agents/identify_abstractions";
 import { OrderChaptersAgent } from "../agents/order_chapters";
 import { WriteChapterAgent } from "../agents/write_chapter";
+import { GitHubService } from "../../services/github-service";
 
 const fetchRepoStep = createStep({
     id: "fetch-repo-step",
@@ -27,29 +28,90 @@ const fetchRepoStep = createStep({
             throw new Error("Input data not found");
         }
 
-        const agent = mastra?.getAgent('repoAnalyst');
-        if (!agent) {
-            throw new Error("repoAnalyst agent not found");
+        console.log(`=== Fetching repository data from: ${inputData.repoUrl} ===`);
+
+        // Initialize GitHub service
+        const githubService = new GitHubService();
+        
+        try {
+            // Fetch real repository data
+            const repoData = await githubService.parseRepository(inputData.repoUrl);
+            
+            console.log(`Found ${repoData.files.length} files in repository: ${repoData.name}`);
+            
+            // Convert to the expected format
+            const filesData: Array<[string, string]> = repoData.files
+                .filter(file => file.content && file.content.length < 50000) // Limit file size to prevent overwhelming
+                .map(file => [file.path, file.content || ''] as [string, string])
+                .slice(0, 50); // Limit to first 50 files to prevent overwhelming the analysis
+            
+            console.log(`Selected ${filesData.length} files for analysis`);
+            console.log('Files selected:', filesData.map(([path]) => path));
+
+            // Use the agent for high-level analysis
+            const agent = mastra?.getAgent('repoAnalyst');
+            if (!agent) {
+                throw new Error("repoAnalyst agent not found");
+            }
+
+            // Create a summary of the repository structure for the agent
+            const fileSummary = filesData.map(([path, content]) => 
+                `File: ${path}\nSize: ${content.length} characters\nLanguage: ${githubService.getLanguageFromPath(path)}\nPreview: ${content.substring(0, 200)}...`
+            ).join('\n\n---\n\n');
+
+            const prompt = `Analyze this GitHub repository: ${repoData.name}
+            
+Description: ${repoData.description}
+Main Language: ${repoData.language}
+Total Files Analyzed: ${filesData.length}
+
+Repository Files Summary:
+${fileSummary}
+
+Please provide a comprehensive overview of:
+1. The repository structure and organization
+2. Main functionality and purpose 
+3. Key architectural patterns used
+4. Technologies and frameworks involved
+5. Entry points and main components`;
+
+            const response = await agent.generate([
+                { role: 'user', content: prompt }
+            ]);
+
+            return { 
+                repoContent: `Repository: ${repoData.name}\nDescription: ${repoData.description}\nLanguage: ${repoData.language}\nFiles: ${filesData.length}`,
+                repoAnalysis: response.text,
+                filesData: filesData
+            };
+            
+        } catch (error) {
+            console.error("Failed to fetch repository data:", error);
+            console.log("🔄 Falling back to mock data...");
+            
+            // Fallback to mock data if GitHub API fails
+            const mockFilesData: Array<[string, string]> = [
+                ["src/main.ts", "// Main application file\nexport class App {\n  start() {\n    console.log('Starting app');\n  }\n}"],
+                ["src/config.ts", "// Configuration file\nexport const config = {\n  port: 3000,\n  database: 'mongodb://localhost'\n};"],
+                ["src/utils.ts", "// Utility functions\nexport function formatDate(date: Date): string {\n  return date.toISOString();\n}"],
+            ];
+
+            const agent = mastra?.getAgent('repoAnalyst');
+            if (!agent) {
+                throw new Error("repoAnalyst agent not found");
+            }
+
+            const prompt = `Analyze the GitHub repository at: ${inputData.repoUrl}. Note: Using fallback mock data due to API issues.`;
+            const response = await agent.generate([
+                { role: 'user', content: prompt }
+            ]);
+
+            return { 
+                repoContent: response.text,
+                repoAnalysis: response.text,
+                filesData: mockFilesData
+            };
         }
-
-        const prompt = `Analyze the GitHub repository at: ${inputData.repoUrl}. Provide a comprehensive overview of the repository structure, main files, and overall purpose. Also, extract and return the actual file contents in a structured format.`;
-
-        const response = await agent.generate([
-            { role: 'user', content: prompt }
-        ]);
-
-        // Mock files data for now - in a real implementation, you'd extract this from the repo
-        const mockFilesData: Array<[string, string]> = [
-            ["src/main.ts", "// Main application file\nexport class App {\n  start() {\n    console.log('Starting app');\n  }\n}"],
-            ["src/config.ts", "// Configuration file\nexport const config = {\n  port: 3000,\n  database: 'mongodb://localhost'\n};"],
-            ["src/utils.ts", "// Utility functions\nexport function formatDate(date: Date): string {\n  return date.toISOString();\n}"],
-        ];
-
-        return { 
-            repoContent: response.text,
-            repoAnalysis: response.text,
-            filesData: mockFilesData
-        };
     }
 });
 
@@ -81,17 +143,35 @@ const identifyAbstractionsStep = createStep({
             throw new Error("IdentifyAbstractionAgent not found");
         }
 
-        const prompt = `Based on this repository analysis:
+        const prompt = `Analyze this repository to identify key abstractions and their implementing files.
 
+Repository Analysis:
 ${inputData.repoAnalysis}
 
-Identify the key abstractions, patterns, and architectural concepts in this codebase. Focus on:
-- Main classes, interfaces, or data structures
-- Design patterns used
-- Core business logic abstractions
-- Key architectural components
+Available Files (analyze each file's content to determine which abstractions it implements):
+${inputData.filesData.map(([path, content], index) => {
+            const preview = content.substring(0, 1500);
+            const hasMore = content.length > 1500 ? '\n[... content truncated ...]' : '';
+            return `File ${index}: ${path}
+Content:
+${preview}${hasMore}
 
-**IMPORTANT: Please respond with a JSON object in this exact format:**
+---`;
+        }).join('\n')}
+
+**TASK**: Carefully analyze each file's actual content to identify:
+1. What classes, interfaces, services, or patterns are defined or implemented
+2. Which files work together to implement the same conceptual abstraction
+3. The relationships between different code concepts
+
+**IMPORTANT RULES**:
+- Some files may implement MULTIPLE abstractions (include the file in multiple abstraction "files" arrays)
+- Some files may implement NO major abstractions (don't force them into abstractions)
+- Some abstractions may span MULTIPLE files (list all relevant file indices)
+- Look at imports, exports, class names, function purposes, and code patterns
+- Base your analysis on ACTUAL file content, not just file names
+
+**REQUIRED JSON FORMAT**:
 
 \`\`\`json
 {
@@ -99,18 +179,26 @@ Identify the key abstractions, patterns, and architectural concepts in this code
     {
       "name": "AbstractionName",
       "description": "Brief description of what this abstraction does and its purpose in the system",
-      "category": "class|interface|pattern|component|service"
+      "category": "class|interface|pattern|component|service",
+      "files": [0, 1, 2]
     },
     {
       "name": "AnotherAbstraction", 
       "description": "Another description",
-      "category": "class|interface|pattern|component|service"
+      "category": "class|interface|pattern|component|service", 
+      "files": [1, 3]
     }
   ]
 }
 \`\`\`
 
-Provide 3-8 key abstractions that represent the most important concepts in this codebase.`;
+The "files" array should contain the index numbers of files (0-${inputData.filesData.length - 1}) that contain or implement this abstraction based on their ACTUAL CONTENT.
+Provide 1-8 key abstractions that represent the most important concepts in this codebase.
+
+Example analysis process:
+- If File 0 contains a "UserController" class and File 3 contains "UserService" class, both might implement a "User Management" abstraction
+- If File 1 contains database connection code and File 4 contains database queries, both might implement a "Database Layer" abstraction
+- If File 2 only contains utility functions unrelated to major patterns, it might not be included in any abstraction`;
 
         const response = await agent.generate([
             { role: 'user', content: prompt }
@@ -118,6 +206,21 @@ Provide 3-8 key abstractions that represent the most important concepts in this 
 
         // Parse abstractions from JSON response
         const { abstractionsList, parsedAbstractions } = parseAbstractionsFromJSONResponse(response.text, inputData.filesData);
+
+        // Validate that abstractions have meaningful file associations
+        console.log("=== Validating Abstraction-File Associations ===");
+        let totalFileAssociations = 0;
+        parsedAbstractions.forEach((abstraction, index) => {
+            totalFileAssociations += abstraction.files.length;
+            if (abstraction.files.length === 0) {
+                console.log(`⚠️  Warning: Abstraction "${abstraction.name}" has no associated files`);
+            } else {
+                console.log(`✅ Abstraction "${abstraction.name}" -> ${abstraction.files.length} files: [${abstraction.files.map(i => inputData.filesData[i]?.[0] || 'unknown').join(', ')}]`);
+            }
+        });
+        
+        console.log(`📊 Total abstractions: ${parsedAbstractions.length}, Total file associations: ${totalFileAssociations}`);
+        console.log("=================================================");
 
         return { 
             abstractions: response.text,
@@ -170,16 +273,31 @@ function parseAbstractionsFromJSONResponse(responseText: string, filesData: Arra
             if (abstraction.name && typeof abstraction.name === 'string') {
                 const name = abstraction.name.trim();
                 const description = abstraction.description || `Description for ${name}`;
-                const files = [index % filesData.length]; // Distribute across available files
                 
+                // Parse the files array, ensuring they are valid indices
+                let files: number[] = [];
+                if (Array.isArray(abstraction.files)) {
+                    files = abstraction.files
+                        .filter((fileIndex: any) => 
+                            typeof fileIndex === 'number' && 
+                            fileIndex >= 0 && 
+                            fileIndex < filesData.length
+                        );
+                }
+                
+                // Only include abstractions that have valid file associations
+                // Don't force arbitrary file assignments
                 abstractionsList.push(name);
                 parsedAbstractions.push({
                     name: name,
                     description: description,
-                    files: files
+                    files: files // Use actual files specified by the agent, even if empty
                 });
                 
-                console.log(`✅ Parsed abstraction: "${name}"`);
+                const fileNames = files.length > 0 
+                    ? files.map(i => filesData[i]?.[0] || 'unknown').join(', ')
+                    : 'no files specified';
+                console.log(`✅ Parsed abstraction: "${name}" -> files [${files.join(', ')}] -> [${fileNames}]`);
             }
         });
 
@@ -204,13 +322,14 @@ function parseAbstractionsFromJSONResponse(responseText: string, filesData: Arra
         const fallbackNames = extractAbstractionsFallback(responseText);
         const parsedAbstractions = fallbackNames.map((name, index) => ({
             name: name,
-            description: `Automatically extracted abstraction: ${name}`,
-            files: [index % filesData.length]
+            description: `Automatically extracted abstraction: ${name}. Note: File associations need manual analysis.`,
+            files: [] // Don't assign arbitrary files in fallback - let manual analysis determine associations
         }));
 
-        console.log("=== Fallback Abstraction Names ===");
+        console.log("=== Fallback Abstraction Names (No File Associations) ===");
         console.log(fallbackNames);
-        console.log("==================================");
+        console.log("Warning: Automatic file association failed. Manual analysis recommended.");
+        console.log("=========================================================");
 
         return {
             abstractionsList: fallbackNames,
@@ -261,6 +380,7 @@ const analyzeRelationshipsStep = createStep({
             to: z.number(), 
             label: z.string(),
         })),
+        filesData: z.array(z.tuple([z.string(), z.string()])), // Pass through filesData
     }),
     execute: async ({ inputData, mastra }) => {
         if (!inputData) {
@@ -299,6 +419,7 @@ const analyzeRelationshipsStep = createStep({
                 abstractionsList: inputData.abstractionsList,
                 relationshipSummary: relationshipData.summary,
                 relationships: relationshipData.details,
+                filesData: inputData.filesData, // Pass through filesData
             };
         } catch (error) {
             console.error("=== Failed to parse relationship analysis ===");
@@ -313,6 +434,7 @@ const analyzeRelationshipsStep = createStep({
                 abstractionsList: inputData.abstractionsList,
                 relationshipSummary: "Failed to analyze relationships: " + (error as Error).message,
                 relationships: [],
+                filesData: inputData.filesData, // Pass through filesData
             };
         }
     }
@@ -330,6 +452,7 @@ const orderChaptersStep = createStep({
             to: z.number(), 
             label: z.string(),
         })),
+        filesData: z.array(z.tuple([z.string(), z.string()])), // Add filesData to input
     }),
     outputSchema: z.object({
         abstractions: z.string(),
@@ -341,6 +464,7 @@ const orderChaptersStep = createStep({
             label: z.string(),
         })),
         chapterOrder: z.array(z.number()),
+        filesData: z.array(z.tuple([z.string(), z.string()])), // Pass through filesData
     }),
     execute: async ({ inputData, mastra }) => {
         if (!inputData) {
@@ -393,6 +517,7 @@ const orderChaptersStep = createStep({
                 relationshipSummary: inputData.relationshipSummary,
                 relationships: inputData.relationships,
                 chapterOrder: orderData.orderedIndices,
+                filesData: inputData.filesData, // Pass through filesData
             };
         } catch (error) {
             console.error("=== Failed to parse chapter ordering ===");
@@ -409,6 +534,7 @@ const orderChaptersStep = createStep({
                 relationshipSummary: inputData.relationshipSummary,
                 relationships: inputData.relationships,
                 chapterOrder: defaultOrder,
+                filesData: inputData.filesData, // Pass through filesData
             };
         }
     }
@@ -427,6 +553,7 @@ const writeChaptersStep = createStep({
             label: z.string(),
         })),
         chapterOrder: z.array(z.number()),
+        filesData: z.array(z.tuple([z.string(), z.string()])), // Add filesData to input
     }),
     outputSchema: z.object({
         abstractions: z.string(),
@@ -439,6 +566,7 @@ const writeChaptersStep = createStep({
         })),
         chapterOrder: z.array(z.number()),
         chapters: z.array(z.string()),
+        filesData: z.array(z.tuple([z.string(), z.string()])), // Include files data in output
     }),
     execute: async ({ inputData, mastra }) => {
         if (!inputData) {
@@ -457,18 +585,14 @@ const writeChaptersStep = createStep({
             files: [index % 3], // Mock file indices
         }));
 
-        // Mock files data - in real implementation this would come from the repository
-        const mockFilesData: Array<[string, string]> = [
-            ["src/main.ts", "// Main application file\nexport class App {\n  start() {\n    console.log('Starting app');\n  }\n}"],
-            ["src/config.ts", "// Configuration file\nexport const config = {\n  port: 3000,\n  database: 'mongodb://localhost'\n};"],
-            ["src/utils.ts", "// Utility functions\nexport function formatDate(date: Date): string {\n  return date.toISOString();\n}"],
-        ];
+        // Use the actual files data from the repository
+        const actualFilesData = inputData.filesData;
 
         // Prepare chapters data using our tool
         const chaptersToWrite = prepareChaptersData({
             chapterOrder: inputData.chapterOrder,
             abstractions: structuredAbstractions,
-            filesData: mockFilesData,
+            filesData: actualFilesData, // Use actual files instead of mock
             projectName: "GitHub Repository",
             language: "english",
             useCache: true,
@@ -543,6 +667,7 @@ This chapter introduced the ${chapterData.abstractionDetails.name} concept and i
             relationships: inputData.relationships,
             chapterOrder: inputData.chapterOrder,
             chapters: generatedChapters,
+            filesData: inputData.filesData, // Pass through filesData
         };
     }
 });
@@ -564,6 +689,7 @@ const sequentialPipeline = createWorkflow({
         })),
         chapterOrder: z.array(z.number()),
         chapters: z.array(z.string()),
+        filesData: z.array(z.tuple([z.string(), z.string()])), // Add filesData to workflow output
     }),
 })
    .then(fetchRepoStep)
@@ -585,6 +711,7 @@ const sequentialPipeline = createWorkflow({
         })),
         chapterOrder: z.array(z.number()),
         chapters: z.array(z.string()),
+        filesData: z.array(z.tuple([z.string(), z.string()])), // Add filesData to input
     }),
     outputSchema: z.object({
         abstractions: z.string(),
@@ -597,6 +724,7 @@ const sequentialPipeline = createWorkflow({
         })),
         chapterOrder: z.array(z.number()),
         chapters: z.array(z.string()),
+        filesData: z.array(z.tuple([z.string(), z.string()])), // Add filesData to final output
     }),
     execute: async ({ inputData }) => {
         if (!inputData) {
@@ -610,6 +738,7 @@ const sequentialPipeline = createWorkflow({
         console.log("Relationships:", inputData.relationships);
         console.log("Chapter Order:", inputData.chapterOrder);
         console.log("Generated Chapters:", inputData.chapters.length);
+        console.log("Files Analyzed:", inputData.filesData.map(([path]) => path));
 
         return {
             abstractions: inputData.abstractions,
@@ -618,6 +747,7 @@ const sequentialPipeline = createWorkflow({
             relationships: inputData.relationships,
             chapterOrder: inputData.chapterOrder,
             chapters: inputData.chapters,
+            filesData: inputData.filesData, // Include filesData in final output
         };
     }
 }));

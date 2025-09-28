@@ -4,30 +4,34 @@ import { API_CONFIG } from "./constants";
 
 // API utility functions
 export class ApiService {
-  static async createRun(runId: string): Promise<void> {
-    await axios.post(`${API_CONFIG.baseUrl}/create-run?runId=${runId}`, {});
+  static async createRun(runId: string, workflowName: string = 'sequential'): Promise<void> {
+    const workflow = workflowName === 'repositoryParser' ? API_CONFIG.workflows.repositoryParser : API_CONFIG.workflows.sequential;
+    await axios.post(`${API_CONFIG.baseUrl}/${workflow}/create-run?runId=${runId}`, {});
   }
 
-  static async startRun(runId: string, repoUrl: string): Promise<void> {
-    await axios.post(`${API_CONFIG.baseUrl}/start?runId=${runId}`, {
-      inputData: { repoUrl },
+  static async startRun(runId: string, inputData: any, workflowName: string = 'sequential'): Promise<void> {
+    const workflow = workflowName === 'repositoryParser' ? API_CONFIG.workflows.repositoryParser : API_CONFIG.workflows.sequential;
+    await axios.post(`${API_CONFIG.baseUrl}/${workflow}/start?runId=${runId}`, {
+      inputData,
       runtimeContext: {}
     }, {
       headers: { "Content-Type": "application/json" }
     });
   }
 
-  static async getExecutionResult(runId: string): Promise<any> {
-    const response = await axios.get(`${API_CONFIG.baseUrl}/runs/${runId}/execution-result`);
+  static async getExecutionResult(runId: string, workflowName: string = 'sequential'): Promise<any> {
+    const workflow = workflowName === 'repositoryParser' ? API_CONFIG.workflows.repositoryParser : API_CONFIG.workflows.sequential;
+    const response = await axios.get(`${API_CONFIG.baseUrl}/${workflow}/runs/${runId}/execution-result`);
     return response.data;
   }
 
   static async pollExecutionResult(
     runId: string, 
-    onUpdate?: (status: string) => void
+    onUpdate?: (status: string) => void,
+    workflowName: string = 'sequential'
   ): Promise<any> {
     const poll = async (): Promise<any> => {
-      const result = await this.getExecutionResult(runId);
+      const result = await this.getExecutionResult(runId, workflowName);
       
       if (result.status === "running") {
         onUpdate?.("Run is still running...");
