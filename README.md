@@ -1,47 +1,270 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# hackatgt25 — Project README
 
-## Getting Started
+This repository (hackatgt25) contains a Next.js application that integrates Mastra for agent/workflow orchestration, custom agents, tools, and several example workflows. This README explains the purpose and structure of every major folder and file in the project, how Mastra is used, how agents/tools/workflows are organized, and how to run, develop, and debug the app.
 
-1. npm i 
-2. copy .env
-3. npm i mastra --global
-4. mastra dev
+NOTE: This README is intended to be exhaustive and reference all primary files and folders in the project root and `src/` as delivered.
 
-First, run the development server:
+## Table of contents
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Project summary
+- Top-level files and folders
+- `.mastra/` and Mastra runtime
+- `data/` — example inputs & outputs
+- `mastra-service/` — service bundle for Mastra integrations
+- `src/` — application source
+  - `app/` — Next.js app routes, API endpoints, and UI components
+  - `mastra/` — local Mastra integration code (agents, tools, workflows, libs)
+  - `mcp/` — GitHub/MCP helpers
+- `public/` — static assets
+- Development -> run -> build -> deploy notes
+- How Mastra, agents, tools, and workflows interact (conceptual)
+- Troubleshooting & tips
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project summary
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+This repository combines a Next.js front-end and a Mastra-based orchestration layer. Mastra is used as a local orchestration/runtime for agents, tools, and workflows. The project demonstrates building and wiring agents, tools, and workflows into a web UI and API routes. Components in `src/app/components` present diagrams and JSON file loaders, while routes under `src/app/api` expose endpoints to invoke code, save files, and serve Mastra outputs.
 
-## MCP Instructions
+## Top-level files and folders
 
-GITHUB_MCP_URL=https://api.githubcopilot.com/mcp/
-GITHUB_MCP_TOKEN=your_token
-Generate a personal access token by going to settings --> develop settings and add the access token to your .env file 
+- `.env`, `.env.template` — Environment variables for local development (API keys, secrets, feature flags). Keep sensitive keys out of source control.
+- `.gitignore` — Files and directories excluded from git (build artifacts, local DB files).
+- `amplify.yml` — CI/CD settings for AWS Amplify (if used).
+- `biome.json` — project configuration (used by Biome tooling).
+- `next.config.ts` — Next.js config.
+- `package.json` — npm scripts and dependencies for the project.
+- `postcss.config.mjs`, `tailwind.config.ts`, `tsconfig.json` — frontend build and styling tool configuration.
+- `.vscode/mcp.json` — VS Code workspace or helper config for MCP integrations.
 
-## Learn More
+## `.mastra/` — Mastra runtime and artifacts
 
-To learn more about Next.js, take a look at the following resources:
+This folder contains Mastra runtime data and generated bundles. It includes:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `bundler-config.mjs`, `.build/` and `output/` — build artifacts and the produced Mastra service bundle. These are generated outputs used to run Mastra locally or inside a container.
+- Database files: `mastra.db`, `mastra.db-shm`, `mastra.db-wal` — SQLite database used by Mastra for state and indexing. These are local runtime files.
+- `output/tools/` — compiled tool modules referenced by workflows and agents. Each `.mjs` file corresponds to an exported tool used by a Mastra workflow.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Purpose: the `.mastra` folder is effectively the compiled/bundled runtime for Mastra. You may see `.build/` and `output/` subfolders containing modules loaded by the Mastra runtime.
 
-## Deploy on Vercel
+## `data/`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Contains example JSON files used by the UI and for testing/workflows. Examples included:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `Fifteen_puzzle_maker.json` — sample input for a puzzle generator tool
+- `Python-HelloWorld.json` — example output file from a code agent
+- `todo_vanilla.json` — sample todo data
+- `output-1759051792405.json` — example Mastra or tool output snapshot
+
+These files are used by the `JsonFileLoader` and by example workflows.
+
+## `mastra-service/`
+
+This folder contains a self-contained Mastra service implementation for the project. It mirrors the runtime pieces needed to run Mastra logic server-side or in a worker. Important paths:
+
+- `mastra-service/src/mastra/` — source stubs or shipped Mastra modules.
+- `mastra-service/src/mcp/` — MCP (Mastra Control Plane) helpers.
+
+The `mastra-service` bundle in `.mastra/output/` is generated by the local Mastra bundler and may be deployed as a microservice.
+
+## `public/`
+
+Standard Next.js `public/` for static images and assets used by the UI: `file.svg`, `globe.svg`, `next.svg`, `vercel.svg`, `window.svg`.
+
+## Conceptual guide: workflows, agents, tools, and how data flows
+
+This section replaces file-level descriptions with a conceptual, actionable explanation of how the Mastra workflows, agents, and tools are designed and how they interoperate in this project.
+
+Goal and structure
+
+- Goal: compose small, testable units (tools) into higher-level agents and then into workflows that solve real tasks (code analysis, chapter writing, weather retrieval, etc.).
+- Design: three layers with clear responsibilities:
+  1. Tools — atomic side-effecting operations (HTTP calls, file IO, LLM calls, parsing).
+  2. Agents — orchestrators that combine tools and business logic into a single capability (e.g., fetch repo + extract modules + call LLM to summarize).
+ 3. Workflows — high-level process definitions that coordinate agents to implement multi-step features and produce user-facing results.
+
+Data flow and contracts
+
+- Inputs: Each workflow exposes a well-defined JSON contract. Typical fields: `inputType` (e.g., repo, rawCode, sampleFile), `parameters` (options), and `meta` (user id, request id).
+- Agent contract: Agents accept typed input objects and return structured outputs with shape { status: 'ok'|'error', result?: any, logs?: string[], artifacts?: { name: string, content: string }[] }.
+- Tools contract: Tools return either a primitive result (string/JSON) or an Error object. Tools must be idempotent when possible and side-effecting tools should return a stable artifact reference.
+- Workflow result: The workflow gathers agent outputs and returns a canonical response: { status, data, artifacts, diagnostics }.
+
+Typical workflow (example: `analyse-code-workflow`)
+
+1. Input: { repoUrl, pathFilter?, options }.
+2. Step 1 (fetch): Agent `fetch_repo` uses `fetch_repo_code` tool to clone or fetch repository contents (shallow) and returns a file manifest.
+3. Step 2 (extract): Agent `identify_abstractions` or `analyse_code` parses files (AST or regex heuristics) to identify modules, classes, functions.
+4. Step 3 (relationships): `analyse_relations` calls `analyze-relationships-tool` to build a graph (nodes, edges) and metadata for diagram rendering.
+5. Step 4 (summarize): If requested, `analyse_code` uses `write-chapters-tool` or an LLM tool to produce textual summaries or chapter-style breakdowns.
+6. Output: workflow returns { status: 'ok', data: { graph, summaries, filesReviewed }, artifacts: [diagram.mermaid, summary.md] }.
+
+Error modes and handling
+
+- Tool errors: Tools should throw or return an error object. Agents must catch tool errors and add context (which tool, input used). Agents then decide to retry, fallback, or surface a structured error.
+- Idempotency: For tools that mutate external state (DB, file system, third-party APIs), include an `operationId` in tool requests to detect duplicates and avoid repeated side effects.
+- Workflow errors: Workflows return structured diagnostics with provenance for easy UI display: { errorCode, message, agent, tool, trace }.
+- Long-running workflows: For operations that can exceed HTTP timeouts, implement an asynchronous pattern: API returns 202 with a `runId`; the workflow runs in background and provides a status endpoint to poll until completion.
+
+Observability and diagnostics
+
+- Agents should emit logs at key points (start, end, tool call result). Persist traces in the Mastra DB or a separate log sink.
+- Include lightweight metrics: tool call duration, workflow total time, error counts per agent.
+- Artifacts: store artifacts (diagrams, summaries) with predictable keys (e.g., `runs/{runId}/diagram.mermaid`) so the UI can fetch them.
+
+Testing and quality gates
+
+- Unit tests: Test tools in isolation with mocked external calls (HTTP, fs, LLM). Tools have small surface area and are easiest to test.
+- Agent tests: Mock tool outputs and test agent logic and branching (retry/fallback/error propagation).
+- Workflow tests: Use small integration tests that wire a few agents together using in-memory data and ensure final outputs match expectations.
+- Local validation: Run a small test harness `test-workflow` that executes workflows with canned inputs to validate bundling and runtime wiring.
+
+Extending the system (how to add features)
+
+1. Implement a new tool:
+   - Keep it focused and idempotent where possible.
+   - Validate inputs and return a predictable output shape.
+   - Add unit tests that mock network or IO.
+
+2. Add an agent that composes tools:
+   - Agents orchestrate tools and provide error context.
+   - Agents should be small and single-responsibility (e.g., `fetch-and-parse-repo`).
+   - Unit test by mocking tool functions and asserting agent decisions.
+
+3. Create a workflow that composes agents:
+   - Workflows should be declarative about the sequence and optionally parallelize independent agent calls.
+   - Define the workflow input/output contract in the workflow file and update API route adapters accordingly.
+
+Performance and concurrency notes
+
+- For heavy I/O (cloning large repos), prefer streaming or shallow fetches and enforce size limits.
+- Use a job queue for concurrency control (separate process or worker pool) if many concurrent workflow runs are expected.
+- Mastra DB: avoid contention by isolating long-running runs to separate runtime instances or by using a dedicated DB per worker.
+
+Security
+
+- Secrets: never call LLMs or external APIs from client-side code. Store API keys in server environment variables.
+- Input sanitization: validate and sanitize inputs for tools that write to disk or invoke shell commands.
+- Rate limiting: place limits on API endpoints that trigger external API calls (LLMs, GitHub) to avoid accidental overuse or runaway costs.
+
+Developer workflow & quick checklist
+
+- Make changes to tools → run unit tests for tools.
+- Update agents to use new tool outputs → add/adjust agent tests.
+- Re-bundle Mastra artifacts (if needed) → run `mastra` bundler and restart server.
+- Run `test-workflow` to smoke-test the end-to-end flow.
+
+Summary
+
+This project structures logic into tools (small side-effecting units), agents (orchestration and business rules), and workflows (high-level processes). Focus on clear contracts, structured errors, observability, and testability when adding or modifying pieces. If you'd like, I can now:
+
+- Replace the relevant file-level README sections with this conceptual content (done). 
+- Add a short `CONTRIBUTING.md` that codifies the extension steps.
+- Add example curl/postman requests and a sample asynchronous status endpoint pattern.
+
+
+## How Mastra is used in this project
+
+High level:
+
+- Mastra provides a runtime (bundled into `.mastra/output`) that loads `tools` and executes `workflows` composed of `agents`.
+- Agents are small orchestrators: they accept input, call tools or other agents, and return structured outputs. Tools are the smallest building blocks that perform concrete actions (HTTP fetch, file read/write, LLM invocation, etc.).
+- The Next.js backend exposes API routes that call into Mastra workflows. The UI uses those endpoints to trigger analysis, get weather info, save files, and display results.
+
+Integration details in this repo:
+
+- The `src/mastra/index.ts` file is the local entrypoint. The Next.js API endpoints import or reference this entrypoint to run workflows or agents.
+- The `.mastra/output` folder contains the compiled tools and modules that Mastra will dynamically import at runtime when executing workflows.
+- Runtime state and logs are stored in the Mastra SQLite DB files at `.mastra/mastra.db*`.
+
+Operational contract (how to call a workflow):
+
+- Input: JSON payload specific to the workflow (see `workflows/*.ts` for expected shape).
+- Output: Workflow returns structured JSON including status, result(s), and optionally artifacts (files or strings).
+- Errors: Workflows may return structured errors or throw — API routes should catch and return normalized HTTP error responses.
+
+Edge cases to be mindful of:
+
+- Missing API keys in `.env` for external tools (LLM, weather APIs).
+- Large repo fetches causing timeouts — use sampling or depth-limited fetches.
+- Concurrency: Mastra DB locking under concurrent runs; prefer queueing or using separate runtime instances for heavy workloads.
+
+## API routes and usage
+
+The API routes in `src/app/api` are lightweight adapters between HTTP and Mastra workflows:
+
+- `POST /api/code` — Accepts a code analysis request (repo URL, file list, or raw code) and runs `analyse-code-workflow` via Mastra; returns analysis results and diagram data.
+- `GET /api/data/:fileName` — Returns JSON example files stored under `data/`.
+- `GET /api/files` — Lists available files for the UI to pick from.
+- `POST /api/save` — Saves JSON or outputs to persistent storage (local `data/` or DB). This route ensures sanitized filenames and safe writes.
+
+Implementation notes: API route handlers use Next.js serverless route handlers (`route.ts`) and can import server-side code without bundling client-side. Keep secrets server-only.
+
+## Frontend components and UX
+
+Key UI flows:
+
+- Load sample JSON: `JsonFileLoader` fetches `GET /api/data/:fileName` and displays content.
+- Visualize relationships: `Diagram` and `MultiDiagram` render Mermaid charts created by `analyse_relations` and other agents.
+- Trigger analysis: The main page uses `fetch` to `POST /api/code` with user inputs to start workflows.
+
+Utility components and hooks:
+
+- `useMermaidRenderer` — Converts Mermaid text to rendered SVG inside React.
+- `JsonProcessorService` — Prepares JSON for the diagramming components (normalizes keys, extracts nodes/edges).
+- `MarkdownParserService` — Converts markdown to HTML and also extracts code blocks or diagram specifications.
+
+## Development: run, build, test
+
+Assumptions: you have Node.js (16+ recommended) and npm or pnpm installed.
+
+1. Install dependencies:
+
+   npm install
+
+2. Development server:
+
+   npm run dev
+
+   This starts Next.js in development mode. API routes will be accessible on localhost; the Mastra runtime will be used directly if referenced by server code.
+
+3. Build:
+
+   npm run build
+
+   This builds Next.js and the app. Mastra bundling is a separate step if you need to rebuild `.mastra/output/` using Mastra's bundler.
+
+4. Start production server:
+
+   npm run start
+
+5. Mastra bundling (if making changes to agents/tools/workflows):
+
+   - Use the project's Mastra bundler task if available. The bundler generates `.mastra/output/` artifacts and updated runtime files.
+   - After bundling, restart the Next.js server so that API routes pick up the new artifacts.
+
+## Deployment notes
+
+- If deploying to Vercel or Amplify, ensure the `.mastra/output` artifacts are included in the build or that the bundling step runs at build-time. Large DB files should be excluded or hosted externally.
+- Keep API keys in environment variables (Vercel dashboard or Amplify env settings).
+
+## Troubleshooting & tips
+
+- Mastra DB locked / concurrency errors: stop other processes using the `.mastra/mastra.db*` files or use a separate runtime instance per request.
+- Missing compiled tools: ensure you run the bundler that creates `.mastra/output/tools` after editing `src/mastra/tools/*.ts`.
+- API timing out for long-running workflows: consider returning an HTTP 202 and providing a status endpoint to poll workflow progress.
+
+## Files and their purposes (short index)
+
+- `.env` — runtime env vars
+- `.mastra/` — runtime DB and compiled bundles
+- `data/` — sample JSON inputs/outputs
+- `mastra-service/` — shipped Mastra microservice code
+- `public/` — static assets
+- `src/app/` — Next.js UI, components, API routes
+- `src/mastra/` — agents, tools, workflows
+- `src/mcp/` — GitHub/MCP helpers
+
+## Final notes
+
+This README provides an exhaustive tour of the codebase and how Mastra integrates with the Next.js app. 

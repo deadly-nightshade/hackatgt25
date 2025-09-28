@@ -51,6 +51,23 @@ export default function JsonFileLoader({ onRepositoryLoaded, onError }: JsonFile
     }
   };
 
+  const loadPresetFile = async (fileName: string) => {
+    setIsProcessing(true);
+    try {
+      const res = await fetch(`/api/data/${encodeURIComponent(fileName)}`);
+      if (!res.ok) throw new Error(`Failed to fetch preset: ${res.status}`);
+      const json = await res.json();
+      // If API returns an object or a JSON string, normalize to string input for processor
+      const input = typeof json === 'string' ? json : JSON.stringify(json);
+      const repository = await jsonProcessor.processJsonFromInput(input);
+      onRepositoryLoaded(repository);
+    } catch (error) {
+      onError(`Failed to load preset file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type === 'application/json') {
