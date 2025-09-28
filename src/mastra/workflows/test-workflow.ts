@@ -10,7 +10,78 @@ import { repoAnalyst } from "../agents/fetch_repo";
 import { IdentifyAbstractionAgent } from "../agents/identify_abstractions";
 import { OrderChaptersAgent } from "../agents/order_chapters";
 import { WriteChapterAgent } from "../agents/write_chapter";
-import { GitHubService } from "../../services/github-service";
+
+// Helper functions
+function parseRepositoryDataFromResponse(responseText: string): {
+    repository: { name: string; description?: string; language?: string };
+    files: Array<{ path: string; content: string; size?: number }>;
+} | null {
+    try {
+        // Extract JSON from response
+        const jsonMatch = responseText.match(/```json\s*\n([\s\S]*?)\n\s*```/);
+        if (!jsonMatch) {
+            console.log("No JSON block found, trying to extract from raw text");
+            // Try to find JSON directly in text
+            const directMatch = responseText.match(/\{[\s\S]*"files"[\s\S]*\}/);
+            if (directMatch) {
+                return JSON.parse(directMatch[0]);
+            }
+            return null;
+        }
+
+        const jsonData = JSON.parse(jsonMatch[1]);
+        
+        if (!jsonData.repository || !jsonData.files) {
+            console.log("Invalid JSON structure: missing repository or files");
+            return null;
+        }
+
+        return jsonData;
+    } catch (error) {
+        console.error("Failed to parse repository data from response:", error);
+        return null;
+    }
+}
+
+function getLanguageFromPath(path: string): string {
+    const extension = path.split('.').pop()?.toLowerCase();
+    const languageMap: { [key: string]: string } = {
+        'js': 'JavaScript',
+        'jsx': 'JavaScript (JSX)',
+        'ts': 'TypeScript',
+        'tsx': 'TypeScript (TSX)',
+        'py': 'Python',
+        'java': 'Java',
+        'cpp': 'C++',
+        'c': 'C',
+        'h': 'C/C++ Header',
+        'hpp': 'C++ Header',
+        'rs': 'Rust',
+        'go': 'Go',
+        'php': 'PHP',
+        'rb': 'Ruby',
+        'cs': 'C#',
+        'swift': 'Swift',
+        'kt': 'Kotlin',
+        'scala': 'Scala',
+        'json': 'JSON',
+        'yaml': 'YAML',
+        'yml': 'YAML',
+        'toml': 'TOML',
+        'xml': 'XML',
+        'html': 'HTML',
+        'css': 'CSS',
+        'scss': 'SCSS',
+        'md': 'Markdown',
+        'txt': 'Text',
+        'sh': 'Shell',
+        'bat': 'Batch',
+        'ps1': 'PowerShell',
+        'sql': 'SQL'
+    };
+    
+    return languageMap[extension || ''] || 'Unknown';
+}
 
 const fetchRepoStep = createStep({
     id: "fetch-repo-step",
@@ -30,39 +101,83 @@ const fetchRepoStep = createStep({
 
         console.log(`=== Fetching repository data from: ${inputData.repoUrl} ===`);
 
-        // Initialize GitHub service
-        const githubService = new GitHubService();
-        
         try {
-            // Fetch real repository data
-            const repoData = await githubService.parseRepository(inputData.repoUrl);
-            
-            console.log(`Found ${repoData.files.length} files in repository: ${repoData.name}`);
-            
-            // Convert to the expected format
-            const filesData: Array<[string, string]> = repoData.files
-                .filter(file => file.content && file.content.length < 50000) // Limit file size to prevent overwhelming
-                .map(file => [file.path, file.content || ''] as [string, string])
-                .slice(0, 50); // Limit to first 50 files to prevent overwhelming the analysis
-            
-            console.log(`Selected ${filesData.length} files for analysis`);
-            console.log('Files selected:', filesData.map(([path]) => path));
-
-            // Use the agent for high-level analysis
+            // Use the repoAnalyst agent which has GitHub MCP tools to fetch repository data
             const agent = mastra?.getAgent('repoAnalyst');
             if (!agent) {
                 throw new Error("repoAnalyst agent not found");
             }
 
-            // Create a summary of the repository structure for the agent
+            // Parse GitHub URL to extract owner and repo
+            const urlPattern = /github\.com\/([^\/]+)\/([^\/]+)/;
+            const match = inputData.repoUrl.match(urlPattern);
+            
+            if (!match) {
+                throw new Error("Invalid GitHub URL format. Expected: https://github.com/owner/repo");
+            }
+
+            const [, owner, repo] = match;
+            console.log(`Repository: ${owner}/${repo}`);
+
+            // Ask the agent to fetch repository files and content using GitHub MCP tools
+            const prompt = `Please fetch all files and their content from the GitHub repository: ${owner}/${repo}
+
+Your tasks:
+1. First get the repository information using GitHub tools
+2. List all files in the repository recursively 
+3. Filter for code files (exclude binaries, large files, generated files like node_modules, dist, build)
+4. Fetch the content of relevant code files (.js, .ts, .py, .java, .cpp, .rs, .go, .php, .rb, .cs, etc.)
+5. Include configuration files like package.json, requirements.txt, etc.
+6. Limit file size to under 50KB per file to prevent overwhelming
+7. Return results in this EXACT JSON format:
+
+\`\`\`json
+{
+  "repository": {
+    "name": "repo-name",
+    "description": "repo description",
+    "language": "primary language"
+  },
+  "files": [
+    {
+      "path": "src/main.js",
+      "content": "// actual file content here",
+      "size": 1234
+    }
+  ]
+}
+\`\`\`
+
+Focus on the most important source files that would help understand the codebase architecture. Limit to 50 files maximum.`;
+
+            const response = await agent.generate([
+                { role: 'user', content: prompt }
+            ]);
+
+            // Parse the JSON response from the agent
+            const repoData = parseRepositoryDataFromResponse(response.text);
+            
+            if (!repoData || !repoData.files || repoData.files.length === 0) {
+                throw new Error("No files found or invalid response format");
+            }
+
+            // Convert to the expected format
+            const filesData: Array<[string, string]> = repoData.files
+                .filter(file => file.content && file.content.length > 0)
+                .map(file => [file.path, file.content] as [string, string]);
+            
+            console.log(`Successfully collected ${filesData.length} files for analysis`);
+            console.log('Files selected:', filesData.map(([path]) => path));
+
+            // Create a summary of the repository structure
             const fileSummary = filesData.map(([path, content]) => 
-                `File: ${path}\nSize: ${content.length} characters\nLanguage: ${githubService.getLanguageFromPath(path)}\nPreview: ${content.substring(0, 200)}...`
+                `File: ${path}\nSize: ${content.length} characters\nLanguage: ${getLanguageFromPath(path)}\nPreview: ${content.substring(0, 200)}...`
             ).join('\n\n---\n\n');
 
-            const prompt = `Analyze this GitHub repository: ${repoData.name}
+            const analysisPrompt = `Analyze this GitHub repository: ${repoData.repository.name}
             
-Description: ${repoData.description}
-Main Language: ${repoData.language}
+Description: ${repoData.repository.description || 'No description provided'}
+Main Language: ${repoData.repository.language || 'Unknown'}
 Total Files Analyzed: ${filesData.length}
 
 Repository Files Summary:
@@ -75,13 +190,13 @@ Please provide a comprehensive overview of:
 4. Technologies and frameworks involved
 5. Entry points and main components`;
 
-            const response = await agent.generate([
-                { role: 'user', content: prompt }
+            const analysisResponse = await agent.generate([
+                { role: 'user', content: analysisPrompt }
             ]);
 
             return { 
-                repoContent: `Repository: ${repoData.name}\nDescription: ${repoData.description}\nLanguage: ${repoData.language}\nFiles: ${filesData.length}`,
-                repoAnalysis: response.text,
+                repoContent: `Repository: ${repoData.repository.name}\nDescription: ${repoData.repository.description || 'No description'}\nLanguage: ${repoData.repository.language || 'Unknown'}\nFiles: ${filesData.length}`,
+                repoAnalysis: analysisResponse.text,
                 filesData: filesData
             };
             
@@ -89,11 +204,13 @@ Please provide a comprehensive overview of:
             console.error("Failed to fetch repository data:", error);
             console.log("🔄 Falling back to mock data...");
             
-            // Fallback to mock data if GitHub API fails
+            // Fallback to mock data if GitHub MCP fails
             const mockFilesData: Array<[string, string]> = [
                 ["src/main.ts", "// Main application file\nexport class App {\n  start() {\n    console.log('Starting app');\n  }\n}"],
                 ["src/config.ts", "// Configuration file\nexport const config = {\n  port: 3000,\n  database: 'mongodb://localhost'\n};"],
                 ["src/utils.ts", "// Utility functions\nexport function formatDate(date: Date): string {\n  return date.toISOString();\n}"],
+                ["package.json", "{\n  \"name\": \"sample-app\",\n  \"version\": \"1.0.0\",\n  \"dependencies\": {\n    \"express\": \"^4.18.0\"\n  }\n}"],
+                ["README.md", "# Sample Repository\\n\\nThis is a sample application for testing purposes."],
             ];
 
             const agent = mastra?.getAgent('repoAnalyst');
@@ -101,13 +218,19 @@ Please provide a comprehensive overview of:
                 throw new Error("repoAnalyst agent not found");
             }
 
-            const prompt = `Analyze the GitHub repository at: ${inputData.repoUrl}. Note: Using fallback mock data due to API issues.`;
+            const prompt = `Analyze the GitHub repository at: ${inputData.repoUrl}. Note: Using fallback mock data due to API issues.
+
+Repository contains the following files:
+${mockFilesData.map(([path, content]) => `${path} (${content.length} chars)`).join(', ')}
+
+Please provide a comprehensive analysis based on these files.`;
+            
             const response = await agent.generate([
                 { role: 'user', content: prompt }
             ]);
 
             return { 
-                repoContent: response.text,
+                repoContent: `Mock Repository Data\nFiles: ${mockFilesData.length}`,
                 repoAnalysis: response.text,
                 filesData: mockFilesData
             };
