@@ -39,13 +39,13 @@ export default function Sidebar({
       
       {/* Sidebar with collapsible functionality */}
       <div className={`
-        fixed top-0 left-0 h-full bg-[#ececec] shadow-[4px_4px_25px_#00000040] transform transition-all duration-300 ease-in-out z-50 border-r-[3px] border-white
+        fixed top-0 left-0 h-full bg-[#ececec] shadow-[4px_4px_25px_#00000040] transform transition-all duration-300 ease-in-out z-50
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         lg:translate-x-0 lg:static lg:z-auto
         ${isCollapsed ? 'lg:w-16 xl:w-16' : 'w-80 lg:w-64 xl:w-80'}
       `}>
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b-[3px] border-white bg-[linear-gradient(103deg,rgba(120,127,227,1)_0%,rgba(128,66,182,1)_100%)]">
+        <div className="flex items-center justify-between px-4 py-3 border-b-[3px] border-white bg-[linear-gradient(103deg,rgba(120,127,227,1)_0%,rgba(128,66,182,1)_100%)]">
           {!isCollapsed && (
             <h2 className="text-lg font-bold text-white">Navigation</h2>
           )}
@@ -95,7 +95,7 @@ export default function Sidebar({
                   <button
                     onClick={() => handleRepoClick(repo.id)}
                     className={`
-                      w-full text-left rounded-3xl text-sm font-bold transition-all duration-300 shadow-[2px_2px_15px_#00000020]
+                      w-full text-left rounded-xl text-sm font-bold transition-all duration-300 shadow-[2px_2px_15px_#00000020]
                       ${isCollapsed ? 'px-2 py-2 flex justify-center' : 'px-4 py-3'}
                       ${currentRepo === repo.id 
                         ? 'bg-[linear-gradient(103deg,rgba(120,127,227,1)_0%,rgba(128,66,182,1)_100%)] text-white shadow-[4px_4px_25px_#00000040] border-[2px] border-white' 
@@ -121,7 +121,7 @@ export default function Sidebar({
                           key={chapter.id}
                           onClick={() => handleChapterClick(repo.id, chapter.path)}
                           className={`
-                            w-full text-left px-4 py-2 rounded-3xl text-sm transition-all duration-300 shadow-[1px_1px_10px_#00000015] font-mono
+                            bg-none w-full text-left px-4 py-2 rounded-2xl text-sm transition-all duration-300 font-mono
                             ${currentRepo === repo.id && currentChapter === chapter.path
                               ? 'bg-white text-[#491b72] shadow-[3px_3px_20px_#00000030] border-[2px] border-purple-300 font-bold'
                               : 'text-[#491b72] hover:bg-white/40 hover:shadow-[2px_2px_15px_#00000020] bg-white/20'
@@ -147,7 +147,7 @@ export default function Sidebar({
         {/* Footer */}
         <div className="border-t-[3px] border-white p-4 bg-white/20">
           <div className={`text-xs text-[#491b72] font-mono font-bold ${isCollapsed ? 'text-center' : ''}`}>
-            {isCollapsed ? "v1.0" : "Dumb it Down v1.0"}
+            {isCollapsed ? "v1.0" : "GitGood v1.0"}
           </div>
         </div>
       </div>
