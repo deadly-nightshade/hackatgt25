@@ -54,6 +54,7 @@ export const SingleChapterInputSchema = z.object({
         filename: z.string(),
     }).nullable(),
     previousChaptersSummary: z.string(),
+    projectSummary: z.string().optional(),
     language: z.string().default('english'),
     useCache: z.boolean().default(true),
 });
@@ -124,12 +125,16 @@ export function prepareChaptersData(input: WriteChaptersInput) {
             // Get next chapter info
             const nextChapter = i < chapterOrder.length - 1 ? chapterFilenames[chapterOrder[i + 1]] : null;
             
+            // Build a small project summary (concise) to provide to every chapter prompt
+            const projectSummary = abstractions.map((a, idx) => `- ${a.name}: ${a.description}`).join('\n');
+
             itemsToProcess.push({
                 chapterNum: i + 1,
                 abstractionIndex: abstractionIndex,
                 abstractionDetails: abstractionDetails,
                 relatedFilesContentMap: relatedFilesContentMap,
                 projectName: projectName,
+                projectSummary: projectSummary,
                 fullChapterListing: fullChapterListing,
                 chapterFilenames: chapterFilenames,
                 prevChapter: prevChapter,
@@ -198,6 +203,9 @@ export function prepareSingleChapterPrompt(item: SingleChapterInput): string {
     const prompt = `
 ${languageInstruction}Write a very beginner-friendly tutorial chapter (in Markdown format) for the project \`${projectName}\` about the concept: "${abstractionName}". This is Chapter ${chapterNum}.
 
+Project Summary (give this to the reader before the chapter):
+${item.projectSummary || projectName}
+
 Concept Details${conceptDetailsNote}:
 - Name: ${abstractionName}
 - Description:
@@ -255,8 +263,14 @@ export function validateChapterContent(
     chapterNum: number, 
     abstractionName: string
 ): string {
+    // First clean up common LLM escaping issues (e.g., "\# Chapter...", escaped links, or escaped mermaid)
+    chapterContent = cleanLLMOutput(chapterContent);
+
+    // Remove any leading whitespace/indentation before headings that LLMs sometimes add
+    chapterContent = chapterContent.replace(/^[ \t]+(?=#\s*Chapter)/gm, '');
+
     const actualHeading = `# Chapter ${chapterNum}: ${abstractionName}`;
-    
+
     if (!chapterContent.trim().startsWith(`# Chapter ${chapterNum}`)) {
         // Add heading if missing or incorrect
         const lines = chapterContent.trim().split('\n');
@@ -269,6 +283,72 @@ export function validateChapterContent(
             chapterContent = `${actualHeading}\n\n${chapterContent}`;
         }
     }
-    
+
     return chapterContent;
+}
+
+/**
+ * Clean typical LLM output issues:
+ * - Remove stray backslashes before Markdown headings (e.g. "\# Chapter...")
+ * - Unescape bracketed links/parentheses outside code fences
+ * - Normalize and unescape mermaid blocks (remove accidental backslashes inside mermaid)
+ * - Preserve non-mermaid code fences as-is
+ */
+function cleanLLMOutput(content: string): string {
+    if (!content) return content;
+
+    const lines = content.split('\n');
+    const out: string[] = [];
+    let inFence = false;
+    let fenceLang = '';
+
+    for (let i = 0; i < lines.length; i++) {
+        let line = lines[i];
+
+        // Normalize fence lines that may have been escaped (e.g. "\`\`\`mermaid") by stripping leading backslashes
+        const strippedLeading = line.replace(/^(\s*)\\+/, '$1');
+
+        const fenceStartMatch = strippedLeading.match(/^\s*```(\w*)/);
+        if (!inFence && fenceStartMatch) {
+            inFence = true;
+            fenceLang = (fenceStartMatch[1] || '').toLowerCase();
+            // push normalized fence line (remove any stray leading backslashes)
+            out.push(strippedLeading);
+            continue;
+        }
+
+        // Detect fence end (also normalize)
+        if (inFence && /^\s*```/.test(strippedLeading)) {
+            inFence = false;
+            fenceLang = '';
+            out.push(strippedLeading);
+            continue;
+        }
+
+        if (inFence) {
+            if (fenceLang === 'mermaid') {
+                // Mermaid blocks should not contain backslash-escapes inserted by LLMs.
+                // Remove backslashes but preserve normal characters.
+                out.push(line.replace(/\\+/g, ''));
+            } else {
+                // Non-mermaid code blocks: leave content untouched
+                out.push(line);
+            }
+            continue;
+        }
+
+        // Outside fenced blocks: fix common escaped characters that break Markdown rendering
+        // 1) Leading escaped hashes for headings: "\#" -> "#"
+        line = line.replace(/^(\s*)\\+(#+\s*)/, '$1$2');
+
+        // 2) Remove backslashes before brackets and parentheses used in links: "\[Title\](file.md)" -> "[Title](file.md)"
+        line = line.replace(/\\([\[\]()/])/g, '$1');
+
+        // 3) Unescape some other common markdown punctuation outside code: `* _ >`
+        line = line.replace(/\\([*_`>])/g, '$1');
+
+        out.push(line);
+    }
+
+    return out.join('\n');
 }
