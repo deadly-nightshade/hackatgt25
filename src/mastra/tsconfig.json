@@ -1,12 +1,13 @@
-
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "target": "ES2019",
+    "lib": ["ES2019"],
+    "module": "commonjs",
+    "moduleResolution": "node",
     "esModuleInterop": true,
     "strict": true,
-    "types": ["node"]
+    "skipLibCheck": true,
+    "downlevelIteration": true
   },
-  "include": ["**/*.ts"]
+  "include": ["api/**/*", "workflows/**/*", "agents/**/*", "tools/**/*", "index.ts", "memory.ts"]
 }
