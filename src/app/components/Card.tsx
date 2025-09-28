@@ -1,6 +1,7 @@
 import React from "react";
 
 type NestedItem = {
+  id?: string;
   label: string;
   onClick: () => void;
   isOpen?: boolean;
@@ -25,7 +26,7 @@ const Card: React.FC<CardProps> = ({
 }) => {
   return (
     <div
-      className={`inline-block rounded-3xl shadow-[4px_4px_25px_#00000040] min-w-[250px] my-5 ${className ?? ""}`}
+      className={`inline-block rounded-3xl shadow-[4px_4px_25px_#00000040] min-w-[250px] mb-5 ${className ?? ""}`}
     >
       {/* Header */}
       <div className="flex items-center justify-center px-6 py-3 rounded-t-3xl bg-[linear-gradient(103deg,rgba(120,127,227,1)_0%,rgba(128,66,182,1)_100%)]">
@@ -44,6 +45,7 @@ const Card: React.FC<CardProps> = ({
                 return (
                   <div
                     key={i}
+                    id={item.id}
                     className="relative flex items-center cursor-pointer mb-1 w-full"
                     onClick={item.onClick}
                   >
