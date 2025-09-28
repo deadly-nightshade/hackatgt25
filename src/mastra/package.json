@@ -1,0 +1,23 @@
+{
+  "name": "mastra-backend",
+  "private": true,
+  "type": "commonjs",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "echo \"(add eslint if you want)\"",
+    "dev": "vercel dev --listen 4000"
+  },
+  "dependencies": {
+    "@mastra/core": "^0.1.0",
+    "@mastra/libsql": "^0.1.0",
+    "@mastra/loggers": "^0.1.0",
+    "dotenv": "^16.4.5",
+    "pino": "^9.0.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "typescript": "^5.6.3"
+  }
+}

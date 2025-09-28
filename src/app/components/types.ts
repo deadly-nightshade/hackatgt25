@@ -40,11 +40,23 @@ export interface DiagramData {
 }
 
 // Sidebar and Navigation interfaces
+export interface ChapterContent {
+  title?: string;
+  description?: string;
+  items?: string[];
+  htmlContent?: string;
+  rawMarkdown?: string;
+}
+
 export interface Chapter {
   id: string;
   title: string;
-  content: string;  // Store markdown content directly
-  order: number;
+  // Older code stored markdown directly as a string. Newer code uses a richer
+  // content object. Allow either for backward compatibility.
+  content?: string | ChapterContent;
+  // Optional normalized path used for routing/navigation in the UI
+  path?: string;
+  order?: number;
 }
 
 export interface Repository {
@@ -92,4 +104,21 @@ export interface AppState {
   currentRepo: string;
   currentView: CurrentView | null;
 }
+
+// Props used by the sidebar UI
+
+// src/app/components/types.ts
+export interface SidebarProps {
+  repositories: Repository[];
+  currentRepo?: string;
+  currentChapter?: string;
+  isOpen?: boolean;
+  onToggle?: () => void;
+  onNavigate?: (repoId: string, chapterId?: string) => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
+}
+
+
+
 
