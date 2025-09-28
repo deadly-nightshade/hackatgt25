@@ -199,12 +199,14 @@ export default function App() {
         // Parse markdown to HTML using the MarkdownParserService
         const htmlContent = await parser.parseMarkdownToHTML(chapterMarkdown);
         
-        // Extract description from the first paragraph
-        const description = chapterMarkdown
+        // Extract description from the first paragraph (explicitly type the callback)
+        const firstLine = chapterMarkdown
           .split('\n')
-          .find(line => line.trim() && !line.startsWith('#') && !line.startsWith('```'))
-          ?.trim()
-          .substring(0, 200) + '...' || 'Chapter content...';
+          .find((line: string) => line.trim() && !line.startsWith('#') && !line.startsWith('```'));
+
+        const description = firstLine
+          ? firstLine.trim().substring(0, 200) + '...'
+          : 'Chapter content...';
         
         parsedChapters.push({
           id: chapterId,
@@ -437,11 +439,14 @@ export default function App() {
                 className="bg-[#ececec] p-6 rounded-3xl shadow-[4px_4px_25px_#00000040] hover:shadow-[6px_6px_30px_#00000060] cursor-pointer transition-all duration-300 border-[3px] border-white"
               >
                 <h3 className="font-bold text-[#491b72] text-lg mb-2">{chapter.title}</h3>
-                {chapter.content && (
-                  <p className="text-xs text-[#491b72] font-mono mt-2 opacity-70">
-                    {chapter.content.description.substring(0, 50)}...
-                  </p>
-                )}
+                {(() => {
+                  const summary = RepositoryService.getChapterContent(repositories, repo.id, chapter.id);
+                  return (
+                    <p className="text-xs text-[#491b72] font-mono mt-2 opacity-70">
+                      {summary.description.substring(0, 50)}...
+                    </p>
+                  );
+                })()}
               </div>
             ))}
           </div>
@@ -449,8 +454,8 @@ export default function App() {
       );
     }
 
-    // Show specific chapter
-    const chapter = RepositoryService.findChapterByPath(repo, currentView.chapter);
+  // Show specific chapter
+  const chapter = RepositoryService.findChapterByPath(repo, currentView.chapter);
     if (!chapter) return <div className="text-[#491b72] font-mono">Chapter not found</div>;
 
     return (
@@ -469,11 +474,18 @@ export default function App() {
         <h1 className="text-3xl font-bold text-[#491b72]">{chapter.title}</h1>
         
         {/* Render HTML content from markdown */}
-        {chapter.content?.htmlContent ? (
-          <div 
-            className="prose prose-lg max-w-none text-[#491b72] font-mono"
-            dangerouslySetInnerHTML={{ __html: chapter.content.htmlContent }}
-            style={{
+        {(() => {
+          // Normalize content: if content is a string, attempt to parse via RepositoryService
+          const normalized = typeof chapter.content === 'string'
+            ? RepositoryService.getChapterContent(repositories, repo.id, chapter.id)
+            : (chapter.content as any);
+
+          if (normalized && (normalized as any).htmlContent) {
+            return (
+              <div 
+                className="prose prose-lg max-w-none text-[#491b72] font-mono"
+                dangerouslySetInnerHTML={{ __html: (normalized as any).htmlContent }}
+                style={{
               // Custom styles for the rendered markdown
               '--tw-prose-body': '#491b72',
               '--tw-prose-headings': '#491b72',
@@ -482,14 +494,19 @@ export default function App() {
               '--tw-prose-pre-bg': '#ececec',
             } as React.CSSProperties}
           />
-        ) : (
-          <div className="bg-[#ececec] rounded-2xl shadow-[2px_2px_15px_#00000040] p-6 border-[3px] border-white">
-            <h2 className="text-xl font-bold mb-4 text-[#491b72]">Content for {chapter.title}</h2>
-            <p className="text-[#491b72] mb-4 font-mono">
-              {chapter.content?.description || 'Loading chapter content...'}
-            </p>
-          </div>
-        )}
+          );
+          }
+
+          const summary = RepositoryService.getChapterContent(repositories, repo.id, chapter.id);
+          return (
+            <div className="bg-[#ececec] rounded-2xl shadow-[2px_2px_15px_#00000040] p-6 border-[3px] border-white">
+              <h2 className="text-xl font-bold mb-4 text-[#491b72]">Content for {chapter.title}</h2>
+              <p className="text-[#491b72] mb-4 font-mono">
+                {summary.description || 'Loading chapter content...'}
+              </p>
+            </div>
+          );
+        })()}
       </div>
     );
   };

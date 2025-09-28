@@ -182,3 +182,4 @@ export class JsonProcessorService {
       reader.readAsText(file);
     });
   }
+}
