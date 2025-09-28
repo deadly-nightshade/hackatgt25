@@ -1,8 +1,10 @@
 import { google } from '@ai-sdk/google';
 import { Agent } from '@mastra/core/agent';
 import { memory } from '../memory';
-import { weatherTool } from '../tools/weather-tool';
 
+// The weather tool was removed from the tools folder. Keep the agent lightweight and
+// allow callers to provide a tool at runtime if needed. This agent will still function
+// with an external weather tool supplied via the runtime tools map.
 export const weatherAgent = new Agent({
   name: 'Weather Agent',
   instructions: `
@@ -17,9 +19,8 @@ export const weatherAgent = new Agent({
       - If the user asks for activities and provides the weather forecast, suggest activities based on the weather forecast.
       - If the user asks for activities, respond in the format they request.
 
-      Use the weatherTool to fetch current weather data.
+      If a runtime tool named "weatherTool" is available, prefer using it for external API calls.
 `,
   model: google('gemini-2.5-pro'),
-  tools: { weatherTool },
   memory,
 });

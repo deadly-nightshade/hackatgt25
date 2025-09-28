@@ -24,8 +24,8 @@ export async function POST(req: NextRequest) {
 
     console.log(`Starting code analysis for repository: ${repositoryUrl}`);
 
-    // Step 1: Get code using the testAgent (get_code agent)
-    const getCodeAgent = mastra.getAgent("testAgent");
+  // Step 1: Get code using the repository fetch agent (repoAnalyst)
+  const getCodeAgent = mastra.getAgent("repoAnalyst");
     if (!getCodeAgent) {
       throw new Error("Get code agent not found");
     }
@@ -74,8 +74,8 @@ CRITICAL: Use GitHub MCP tools properly with all required parameters. NO markdow
       codeData = { files: { "raw_output.txt": codeResult.text } };
     }
 
-    // Step 2: Identify features using the identifyCodeFeaturesAgent
-    const featuresAgent = mastra.getAgent("identifyCodeFeaturesAgent");
+  // Step 2: Identify features using the analyseFileAgent
+  const featuresAgent = (mastra as any).getAgent("analyseFileAgent");
     if (!featuresAgent) {
       throw new Error("Code Features Identifier agent not found");
     }
