@@ -39,7 +39,7 @@ export const repoAnalyst = new Agent({
     - Generated files (dist/, build/, node_modules/, .git/, etc.)
     - Test files (unless specifically requested)
   `,
-  model: google("gemini-2.5-flash"),
+  model: google("gemini-2.5-pro"),
   tools: {
     ...githubTools,
   },
