@@ -1,12 +1,13 @@
+# amplify.yml
 version: 1
 frontend:
+  appRoot: apps/web
   phases:
     preBuild:
       commands:
         - npm ci
     build:
       commands:
-        - export NEXT_DISABLE_TURBOPACK=1
         - npm run build
   artifacts:
     baseDirectory: .next
