@@ -274,7 +274,7 @@ export default function App() {
   const parseJsonToRepository = async (jsonData: any, fileName: string): Promise<Repository> => {
     const { status, result, payload, steps } = jsonData;
     const { repoUrl } = payload || {};
-    const { abstractionsList, chapters, relationshipSummary, relationships } = result;
+    const { abstractionsList, chapters, chapterOrder, relationshipSummary, relationships } = result;
 
     // Create a more unique repository ID to avoid duplicates
     const timestamp = Date.now();
@@ -290,7 +290,7 @@ export default function App() {
     // Create chapters from the abstractionsList and chapters array
     if (abstractionsList && chapters) {
       for (let i = 0; i < abstractionsList.length && i < chapters.length; i++) {
-        const chapterTitle = abstractionsList[i];
+        const chapterTitle = abstractionsList[chapterOrder[i]];
         const chapterMarkdown = chapters[i];
         const chapterId = `ch${i + 1}`;
         const chapterPath = chapterTitle
@@ -609,7 +609,7 @@ export default function App() {
           <span className="font-bold">{chapter.title}</span>
         </div>
 
-        <h1 className="text-3xl font-bold text-[#491b72]">{chapter.title}</h1>
+        
 
         {/* Render HTML content from markdown */}
         {(() => {
