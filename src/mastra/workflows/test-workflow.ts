@@ -4,12 +4,6 @@ import { prepareRelationshipAnalysisPrompt, validateRelationshipAnalysisResponse
 import { prepareOrderChaptersPrompt, validateOrderChaptersResponse } from '../tools/order-chapters-tool';
 import { prepareChaptersData, prepareSingleChapterPrompt, validateChapterContent } from '../tools/write-chapters-tool';
 
-import { analyseFileAgent } from "../agents/analyse_file";
-import { analyseRelationsAgent } from "../agents/analyse_relations";
-import { repoAnalyst } from "../agents/fetch_repo";
-import { IdentifyAbstractionAgent } from "../agents/identify_abstractions";
-import { OrderChaptersAgent } from "../agents/order_chapters";
-import { WriteChapterAgent } from "../agents/write_chapter";
 
 const fetchRepoStep = createStep({
     id: "fetch-repo-step",

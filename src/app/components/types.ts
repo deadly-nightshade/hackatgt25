@@ -17,6 +17,10 @@ export interface FunctionData {
   description?: string;
 }
 
+export interface MultiDiagramData{
+  files: DiagramData[];
+}
+
 export interface DiagramData {
   title: string;
   file: string;

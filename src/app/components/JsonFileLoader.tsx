@@ -100,11 +100,6 @@ export default function JsonFileLoader({ onRepositoryLoaded, onError }: JsonFile
     }
   };
 
-  const loadPresetFile = async (fileName: string) => {
-    const filePath = `/data/${fileName}`;
-    await processUrl(filePath);
-  };
-
   return (
     <div className="space-y-6 p-6 bg-white rounded-lg shadow-lg">
       <h2 className="text-2xl font-bold text-gray-800">Load Repository Documentation</h2>

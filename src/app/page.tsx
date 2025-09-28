@@ -2,8 +2,9 @@
 
 import React from "react";
 import Diagram from "./components/Diagram";
+import MultiDiagram from "./components/MultiDiagram";
 import Sidebar from "./components/Sidebar";
-import { Repository, CurrentView } from "./components/types";
+import { Repository, CurrentView, DiagramData } from "./components/types";
 import { sampleDiagrams, UI_CONSTANTS, API_CONFIG, PROCESS_REPOSITORY_ID } from "./components/constants";
 import { ApiService, RepositoryService, UIUtils, ErrorHandler, MermaidUtils } from "./components/utils";
 import { useMermaidRenderer } from "./components/useMermaidRenderer";
@@ -23,6 +24,11 @@ export default function App() {
   const [jsonFiles, setJsonFiles] = React.useState<string[]>([]);
   const [loadedData, setLoadedData] = React.useState<Map<string, any>>(new Map());
   const [change, setChange] = React.useState(0); // State to trigger re-fetching file list
+
+  // NEW: Track loaded code diagram files and their data
+  const [codeFiles, setCodeFiles] = React.useState<string[]>([]);
+  const [loadedCodeData, setLoadedCodeData] = React.useState<Map<string, DiagramData[]>>(new Map());
+  const [codeChange, setCodeChange] = React.useState(0); // State to trigger re-fetching code file list
 
   // State for parsed relationship summary - moved to top level to fix hooks order
   const [parsedSummary, setParsedSummary] = React.useState<string>('');
@@ -68,6 +74,27 @@ export default function App() {
 
     loadAvailableFiles();
   }, [change]);
+
+  // NEW: Load available code diagram files from /api/code endpoint
+  React.useEffect(() => {
+    const loadAvailableCodeFiles = async () => {
+      try {
+        console.log('Fetching code files from backend...');
+        const response = await fetch('/api/code');
+        if (response.ok) {
+          const { files } = await response.json();
+          console.log('Code files received from backend:', files);
+          setCodeFiles(files);
+        } else {
+          console.error('Failed to load code file list from backend', response.status, response.statusText);
+        }
+      } catch (error) {
+        console.error('Error loading code file list:', error);
+      }
+    };
+
+    loadAvailableCodeFiles();
+  }, [codeChange]);
 
   // Load repositories whenever jsonFiles changes or when we need to load data
   React.useEffect(() => {
@@ -127,6 +154,80 @@ export default function App() {
       console.log('No JSON files to load, jsonFiles array is empty:', jsonFiles);
     }
   }, [jsonFiles]); // Only depend on jsonFiles, not loadedData to avoid infinite loops
+
+  // NEW: Load code diagram data for each file and group by repository
+  React.useEffect(() => {
+    const loadCodeDataAsync = async () => {
+      console.log('Loading code diagram data for files:', codeFiles);
+      const newLoadedCodeData = new Map(loadedCodeData);
+      
+      // Group files by repository URL
+      const repoGroups = new Map<string, DiagramData[]>();
+      
+      for (const fileName of codeFiles) {
+        try {
+          // Check if we already have this data loaded
+          if (!loadedCodeData.has(fileName)) {
+            console.log(`Fetching code data for ${fileName}...`);
+            const response = await fetch(`/api/data/${fileName}`);
+            if (response.ok) {
+              const data = await response.json();
+              console.log(`Code data loaded for ${fileName}:`, data);
+              
+              // Transform the data to match DiagramData interface
+              const diagramData: DiagramData = {
+                title: data.repoUrl ? data.repoUrl.split('/').pop() || 'Unknown' : 'Unknown',
+                file: data.file || fileName.replace('.json', ''),
+                summary: data.summary || 'No summary available',
+                imports: data.imports || [],
+                functions: data.functions || [],
+                classes: data.classes || [],
+                constants: data.constants || []
+              };
+
+              // Group by repository URL
+              const repoUrl = data.repoUrl || 'unknown-repo';
+              if (!repoGroups.has(repoUrl)) {
+                repoGroups.set(repoUrl, []);
+              }
+              repoGroups.get(repoUrl)!.push(diagramData);
+              
+              newLoadedCodeData.set(fileName, diagramData);
+            } else {
+              console.warn(`Failed to load code data for ${fileName}`, response.status);
+            }
+          } else {
+            // Use existing data
+            const existingData = loadedCodeData.get(fileName);
+            if (existingData) {
+              const repoUrl = existingData.title || 'unknown-repo';
+              if (!repoGroups.has(repoUrl)) {
+                repoGroups.set(repoUrl, []);
+              }
+              repoGroups.get(repoUrl)!.push(existingData);
+            }
+          }
+        } catch (error) {
+          console.warn(`Could not load code data for ${fileName}:`, error);
+        }
+      }
+      
+      // Convert the grouped data to the final format
+      const finalCodeData = new Map<string, DiagramData[]>();
+      repoGroups.forEach((diagrams, repoUrl) => {
+        // Use a clean repository name as the key
+        const repoName = repoUrl.replace('https://github.com/', '').replace('http://github.com/', '');
+        finalCodeData.set(repoName, diagrams);
+      });
+      
+      setLoadedCodeData(finalCodeData);
+      console.log('Final code data mapping:', finalCodeData);
+    };
+
+    if (codeFiles.length > 0) {
+      loadCodeDataAsync();
+    }
+  }, [codeFiles]);
 
   // Function to refresh the file list from backend (useful for adding new files)
   const refreshFileList = async () => {
@@ -306,6 +407,25 @@ export default function App() {
     setSidebarOpen(false);
   };
 
+  // NEW: Function to get diagram data for current repository
+  const getCurrentRepoDiagramData = (): DiagramData[] => {
+    if (!currentView || currentView.repo === PROCESS_REPOSITORY_ID) {
+      return sampleDiagrams; // Fallback to sample data
+    }
+    
+    const repo = RepositoryService.findRepositoryById(repositories, currentView.repo);
+    if (!repo?.metadata?.repoUrl) {
+      return sampleDiagrams;
+    }
+    
+    // Clean the repo URL to match our key format
+    const repoKey = repo.metadata.repoUrl
+      .replace('https://github.com/', '')
+      .replace('http://github.com/', '');
+    
+    return loadedCodeData.get(repoKey) || sampleDiagrams;
+  };
+
   const renderOutput = () => {
     if (!output) {
       return (
@@ -421,8 +541,8 @@ export default function App() {
             </div>
           )}
 
-          {/* Display Mermaid relationship diagram if data is available */}
-          {repo.metadata?.abstractionsList && repo.metadata?.relationships && (
+                    {/* Project Architecture Mermaid diagram below Table of Contents */}
+                    {repo.metadata?.abstractionsList && repo.metadata?.relationships && (
             <div className="bg-white/60 p-6 rounded-3xl shadow-[2px_2px_15px_#00000020] border-[2px] border-white/40">
               <h2 className="text-xl font-bold text-[#491b72] mb-3">Project Architecture</h2>
               <div 
@@ -436,7 +556,7 @@ export default function App() {
               />
             </div>
           )}
-          
+
           <p className="text-[#491b72] font-mono">Table of Contents</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {repo.chapters.map((chapter) => (
@@ -454,6 +574,7 @@ export default function App() {
               </div>
             ))}
           </div>
+
         </div>
       );
     }
@@ -504,13 +625,13 @@ export default function App() {
   };
 
   return (
-    <div className="relative h-screen">
+    <div className="relative h-screen overflow-hidden">
       {/* Gradient background at lowest z-index */}
       <div className="fixed inset-0 -z-20 h-full w-full bg-[linear-gradient(100deg,rgba(216,213,255,1)_9%,rgba(225,186,213,1)_100%)]"></div>
       {/* White dots overlay above gradient, below all content */}
       <div className="fixed inset-0 -z-10 h-full w-full bg-[radial-gradient(white_2px,transparent_2px)] [background-size:32px_32px]"></div>
       {/* Main app content above overlays */}
-      <div className="flex h-screen relative z-0">
+      <div className="flex h-screen w-full overflow-hidden">
       
       {/* Sidebar */}
       <Sidebar
@@ -525,9 +646,9 @@ export default function App() {
       />
       
       {/* Main Content */}
-      <div className="flex-1 flex flex-col lg:ml-0">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header with hamburger menu */}
-        <div className="bg-[white] px-4 py-3 flex items-center justify-between lg:justify-center">
+        <div className="bg-[white] px-4 py-3 flex items-center justify-between lg:justify-center flex-shrink-0">
           <button
             onClick={() => setSidebarOpen(true)}
             className="lg:hidden p-2 rounded-md hover:bg-white/20 transition-colors"
@@ -548,23 +669,20 @@ export default function App() {
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-auto">
-          <div className="p-6 max-w-4xl mx-auto space-y-6">
+        <div className="flex-1 overflow-auto min-w-0">
+          <div className="p-6 max-w-4xl mx-auto space-y-6 w-full">
             {/* Main content in white container */}
             <div className="bg-[#ececec] rounded-2xl shadow-[4px_4px_25px_#00000040] border-[3px] border-white p-6 mt-5">
               {renderCurrentView()}
             </div>
-
-            {/* Diagram outside the white container - directly on purple background */}
-            {currentView && currentView.repo !== PROCESS_REPOSITORY_ID && sampleDiagrams.length > 0 && (
-              <div>
-                <h2 className="text-xl font-bold text-[#491b72] bg-[#ececec] rounded-2xl shadow-[4px_4px_25px_#00000040] border-[3px] border-white p-6 mt-5">Code Diagram</h2>
-                {sampleDiagrams.map((d, i) => (
-                  <Diagram key={i} inputData={d} />
-                ))}
-              </div>
-            )}
           </div>
+
+          {/* Diagram positioned under the middle column content, taking full width */}
+          {currentView && currentView.repo !== PROCESS_REPOSITORY_ID && !currentView.chapter && (
+            <div className="w-full overflow-hidden">
+              <MultiDiagram inputData={getCurrentRepoDiagramData()} />
+            </div>
+          )}
         </div>
       </div>
     </div>
