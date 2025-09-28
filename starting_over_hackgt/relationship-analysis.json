@@ -1,0 +1,45 @@
+{
+  "summary": "This project is a simple **To-Do List application** that helps you *organize your tasks*. You can easily **add new tasks**, *mark them as complete*, edit them, or remove them. All your tasks are *automatically saved* in your browser's local storage, ensuring they persist even if you close the app, and you can also *filter tasks* to see only active, completed, or all of them.",
+  "relationships": [
+    {
+      "from": 1,
+      "to": 0,
+      "label": "Manages Todos"
+    },
+    {
+      "from": 0,
+      "to": 1,
+      "label": "Notifies of Saves"
+    },
+    {
+      "from": 0,
+      "to": 4,
+      "label": "Uses Persistence"
+    },
+    {
+      "from": 1,
+      "to": 3,
+      "label": "Delegates Events"
+    },
+    {
+      "from": 1,
+      "to": 5,
+      "label": "Updates Filter"
+    },
+    {
+      "from": 1,
+      "to": 2,
+      "label": "Renders Todo HTML"
+    },
+    {
+      "from": 2,
+      "to": 6,
+      "label": "Uses DOM Helpers"
+    },
+    {
+      "from": 1,
+      "to": 6,
+      "label": "Updates UI"
+    }
+  ]
+}

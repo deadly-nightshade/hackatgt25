@@ -12,7 +12,10 @@
     "lint": "biome check",
     "format": "biome format --write",
     "amplify:prebuild": "npm ci",
-    "amplify:build": "npm run build"
+    "amplify:build": "npm run build",
+    "analyze-repo": "ts-node src/cli/github-analyzer-cli.ts analyze",
+    "validate-github-token": "ts-node src/cli/github-analyzer-cli.ts validate-token",
+    "example-github": "ts-node src/examples/github-analyzer-example.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^1.0.0",
@@ -23,7 +26,9 @@
     "@mastra/mcp": "^0.13.1",
     "@mastra/memory": "^0.15.3",
     "@modelcontextprotocol/sdk": "^1.18.2",
+    "@octokit/rest": "^22.0.0",
     "@tailwindcss/typography": "^0.5.19",
+    "commander": "^14.0.1",
     "dompurify": "^3.2.7",
     "dotenv": "^17.2.2",
     "marked": "^16.3.0",

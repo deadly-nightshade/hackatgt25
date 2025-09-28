@@ -1,0 +1,64 @@
+{
+  "abstractions": [
+    {
+      "name": "TodoStore",
+      "description": "Manages the collection of todo items, including adding, removing, updating, filtering, and persisting them to local storage. It also notifies listeners of changes to its state. It's like a librarian for your tasks, keeping track of all your to-do notes, what's done, what's pending, and saving them for later.",
+      "category": "class",
+      "file_indices": [
+        3,
+        5
+      ]
+    },
+    {
+      "name": "Application Controller",
+      "description": "The central orchestrator of the application, responsible for initializing the UI, binding user interactions to data store operations, and rendering updates to the view. It's like a stage director, telling the actors (UI elements) what to do and responding to audience (user) actions.",
+      "category": "component",
+      "file_indices": [
+        3
+      ]
+    },
+    {
+      "name": "Todo Item Renderer",
+      "description": "A function responsible for creating and updating the HTML representation of a single todo item. It ensures the UI accurately reflects the item's state (e.g., completed, editing). It's like a blueprint and construction crew for a single brick in a wall, making sure it looks right and has the correct properties.",
+      "category": "component",
+      "file_indices": [
+        3
+      ]
+    },
+    {
+      "name": "UI Event Delegation",
+      "description": "A pattern for efficiently handling user interactions on dynamically rendered elements by attaching a single event listener to a parent element. It then determines the specific child element that triggered the event. It's like a receptionist at a large office building who listens for all incoming calls and then directs them to the correct department or person, rather than each person having their own phone line.",
+      "category": "pattern",
+      "file_indices": [
+        3,
+        4
+      ]
+    },
+    {
+      "name": "Local Storage Persistence",
+      "description": "The mechanism used to store the application's data (todo items) in the browser's local storage, ensuring that the data is saved and reloaded even after the browser is closed. It also listens for changes from other browser tabs. It's like a persistent notebook where your tasks are written down and kept safe, even if you close the book, and can be synchronized if you have multiple copies open.",
+      "category": "service",
+      "file_indices": [
+        5
+      ]
+    },
+    {
+      "name": "View Router",
+      "description": "Determines which subset of todo items (all, active, or completed) should be displayed based on the URL hash. It updates the UI's filter selection accordingly. It's like a map that guides you to different sections of a park (all items, active items, completed items) based on the path you choose.",
+      "category": "service",
+      "file_indices": [
+        3,
+        4
+      ]
+    },
+    {
+      "name": "DOM Helpers",
+      "description": "A collection of utility functions that simplify common DOM manipulation tasks, such as inserting or replacing HTML content within an element. It's like a set of specialized tools (e.g., a hammer, screwdriver) that make working with a building's structure easier and more efficient.",
+      "category": "service",
+      "file_indices": [
+        3,
+        4
+      ]
+    }
+  ]
+}

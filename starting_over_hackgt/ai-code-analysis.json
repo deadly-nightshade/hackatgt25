@@ -1,0 +1,236 @@
+[
+  {
+    "file": "app-readme.md",
+    "summary": "This file provides a template for a framework's TodoMVC implementation, detailing resources, articles, and support channels. It includes sections for implementation notes and credit, serving as a boilerplate for documenting a specific TodoMVC project.",
+    "imports": [],
+    "functions": [],
+    "classes": []
+  },
+  {
+    "file": "css/index.css",
+    "summary": "This CSS file defines the comprehensive styling for a TodoMVC application, encompassing general layout, typography, and responsive adjustments. It provides detailed styles for core UI elements such as the main application container, input fields, individual todo items (including toggle, label, and destroy buttons), the footer, todo count, and filter navigation. The styles also include various pseudo-classes and media queries for enhanced user experience and responsiveness.",
+    "imports": [],
+    "functions": [],
+    "classes": []
+  },
+  {
+    "file": "index.html",
+    "summary": "This is the main HTML file for a TodoMVC application, establishing the document structure, character encoding, and viewport settings. It links to the application's CSS and loads the primary JavaScript module, `js/app.js`, defining the core UI layout for adding, displaying, and managing todo items, along with filtering options and a footer containing application information. The structure includes placeholders for dynamic content that will be populated by JavaScript.",
+    "imports": [
+      "css/index.css",
+      "js/app.js"
+    ],
+    "functions": [],
+    "classes": []
+  },
+  {
+    "file": "js/app.js",
+    "summary": "This JavaScript file serves as the main application controller for the TodoMVC implementation, orchestrating user interactions and UI rendering. It leverages a `TodoStore` for data management and helper functions for DOM manipulation, dynamically updating the todo list, handling input, managing filters via URL hash, and binding various event listeners to create an interactive user experience. The application object `App` encapsulates all UI logic and state synchronization.",
+    "imports": [
+      "./helpers.js",
+      "./store.js"
+    ],
+    "functions": [],
+    "classes": [
+      {
+        "name": "App",
+        "description": "The main application controller for the TodoMVC application, handling DOM manipulation, event binding, and interaction with the TodoStore. It acts as a central module managing the UI state and user interactions by delegating events and rendering the view.",
+        "functions": [
+          {
+            "name": "showMain",
+            "signature": "showMain(show)",
+            "description": "Controls the visibility of the main todo list section based on the 'show' boolean."
+          },
+          {
+            "name": "showFooter",
+            "signature": "showFooter(show)",
+            "description": "Controls the visibility of the application's footer section based on the 'show' boolean."
+          },
+          {
+            "name": "showClear",
+            "signature": "showClear(show)",
+            "description": "Controls the visibility of the 'Clear completed' button based on the 'show' boolean."
+          },
+          {
+            "name": "setActiveFilter",
+            "signature": "setActiveFilter(filter)",
+            "description": "Applies the 'selected' class to the appropriate filter link within the navigation based on the current filter state (e.g., 'all', 'active', 'completed')."
+          },
+          {
+            "name": "displayCount",
+            "signature": "displayCount(count)",
+            "description": "Updates the UI element showing the number of active todo items remaining, including proper singular/plural formatting."
+          },
+          {
+            "name": "init",
+            "signature": "init()",
+            "description": "Initializes the application by setting up event listeners for the TodoStore, URL hash changes, new todo input, toggle all, and clear completed actions. It then binds todo-specific events and renders the initial UI state."
+          },
+          {
+            "name": "todoEvent",
+            "signature": "todoEvent(event, selector, handler)",
+            "description": "A helper function to delegate events on the todo list, identifying the closest todo item (`[data-id]`) and passing its corresponding todo object and element to a specified handler function."
+          },
+          {
+            "name": "bindTodoEvents",
+            "signature": "bindTodoEvents()",
+            "description": "Binds specific event handlers for individual todo items, including 'click' for destroy and toggle actions, 'dblclick' to enable editing, 'keyup' for saving/canceling edits, and 'focusout' for committing edits."
+          },
+          {
+            "name": "createTodoItem",
+            "signature": "createTodoItem(todo)",
+            "description": "Creates and returns an HTML list item (<li>) element for a given todo object, dynamically setting its content, completion status, and necessary data attributes for interaction."
+          },
+          {
+            "name": "saveFocus",
+            "signature": "saveFocus()",
+            "description": "Saves a CSS selector for the currently focused element within a todo item, allowing focus to be restored after the DOM is re-rendered."
+          },
+          {
+            "name": "restoreFocus",
+            "signature": "restoreFocus()",
+            "description": "Restores focus to a previously saved element, if a selector exists, after the DOM has been updated, ensuring a smooth user experience during re-renders."
+          },
+          {
+            "name": "render",
+            "signature": "render()",
+            "description": "Renders the entire TodoMVC application UI, which includes updating the filter highlights, replacing the todo list with current items, showing/hiding main and footer sections, updating the clear completed button, toggle all checkbox, and the active todo count."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "js/helpers.js",
+    "summary": "This JavaScript file provides a collection of utility functions designed to simplify common DOM manipulation tasks and URL hash parsing for the TodoMVC application. These helpers enable efficient event delegation to handle dynamic elements, controlled HTML insertion and replacement for updating UI sections, and easy extraction of the current routing hash from the browser's URL.",
+    "imports": [],
+    "functions": [
+      {
+        "name": "getURLHash",
+        "signature": "getURLHash()",
+        "description": "Extracts the current URL hash, removing the '#/' prefix to provide a clean filter string for routing."
+      },
+      {
+        "name": "delegate",
+        "signature": "delegate(el, selector, event, handler)",
+        "description": "Attaches an event listener to a parent element and delegates the event to a child element matching a given CSS selector, executing a handler function when triggered."
+      },
+      {
+        "name": "insertHTML",
+        "signature": "insertHTML(el, html)",
+        "description": "Inserts the provided HTML string into the specified element's content, positioned immediately after its beginning ('afterbegin')."
+      },
+      {
+        "name": "replaceHTML",
+        "signature": "replaceHTML(el, html)",
+        "description": "Clears all children of the specified element and then inserts new HTML content into it."
+      }
+    ],
+    "classes": []
+  },
+  {
+    "file": "js/store.js",
+    "summary": "This JavaScript file defines the `TodoStore` class, which is responsible for managing the state and persistence of todo items. It leverages `localStorage` for data storage, extending `EventTarget` to dispatch custom events on data changes, specifically a 'save' event. The class provides a comprehensive API for CRUD operations, filtering, and checking the completion status of todos within a TodoMVC application, ensuring data consistency across sessions.",
+    "imports": [],
+    "functions": [],
+    "classes": [
+      {
+        "name": "TodoStore(EventTarget)",
+        "description": "Manages the state and persistence of todo items in `localStorage`, extending `EventTarget` to dispatch custom 'save' events. It provides methods for adding, removing, toggling, updating, and filtering todo items, as well as checking their completion status and handling cross-window storage updates.",
+        "functions": [
+          {
+            "name": "constructor",
+            "signature": "constructor(localStorageKey)",
+            "description": "Initializes the TodoStore with a specified `localStorageKey`, loads existing todos, sets up an event listener for `storage` changes across windows, and defines several getter methods for convenient access to todo data."
+          },
+          {
+            "name": "_readStorage",
+            "signature": "_readStorage()",
+            "description": "Reads the current list of todo items from `localStorage` associated with the store's key and parses the JSON string into the `todos` array."
+          },
+          {
+            "name": "_save",
+            "signature": "_save()",
+            "description": "Serializes the current `todos` array to a JSON string, saves it to `localStorage`, and dispatches a custom 'save' event to notify listeners of data changes."
+          },
+          {
+            "name": "get",
+            "signature": "get(id)",
+            "description": "Retrieves a single todo item from the current list by its unique identifier."
+          },
+          {
+            "name": "isAllCompleted",
+            "signature": "isAllCompleted()",
+            "description": "Checks if all todo items currently in the list are marked as completed."
+          },
+          {
+            "name": "hasCompleted",
+            "signature": "hasCompleted()",
+            "description": "Checks if there is at least one todo item in the list that is marked as completed."
+          },
+          {
+            "name": "all",
+            "signature": "all(filter)",
+            "description": "Returns a filtered list of todo items based on the provided filter string ('active' to get incomplete, 'completed' to get completed, or all if no filter is specified)."
+          },
+          {
+            "name": "add",
+            "signature": "add({ title })",
+            "description": "Adds a new todo item with the given title, a unique ID, and an initial 'completed: false' status to the list, then saves the updated list."
+          },
+          {
+            "name": "remove",
+            "signature": "remove({ id })",
+            "description": "Removes a todo item identified by its ID from the list and saves the updated list to `localStorage`."
+          },
+          {
+            "name": "toggle",
+            "signature": "toggle({ id })",
+            "description": "Toggles the completion status of a specific todo item by its ID (from completed to active or vice versa) and saves the updated list."
+          },
+          {
+            "name": "clearCompleted",
+            "signature": "clearCompleted()",
+            "description": "Removes all todo items that are currently marked as completed from the list and saves the modified list."
+          },
+          {
+            "name": "update",
+            "signature": "update(todo)",
+            "description": "Updates an existing todo item with new data by finding it based on its ID and replacing its properties, then saves the updated list."
+          },
+          {
+            "name": "toggleAll",
+            "signature": "toggleAll()",
+            "description": "Toggles the completion status for all todo items in the list; if any are incomplete, all become complete, otherwise all become incomplete, and the list is saved."
+          },
+          {
+            "name": "revert",
+            "signature": "revert()",
+            "description": "Saves the current state of the todos to localStorage, effectively ensuring persistence, though it's a no-operation if no explicit changes were made since the last `_save` call."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "file": "package-lock.json",
+    "summary": "This `package-lock.json` file ensures consistent dependency installations for the `todomvc-vanillajs-2022` project by precisely detailing the dependency tree. It specifies that `todomvc-app-css` version `2.4.2` is installed, providing its exact `resolved` URL and `integrity` hash to guarantee reproducible builds across different environments.",
+    "imports": [],
+    "functions": [],
+    "classes": []
+  },
+  {
+    "file": "package.json",
+    "summary": "This `package.json` file defines metadata for the `todomvc-vanillajs-2022` project, including scripts for starting a local HTTP server (`python3 -m http.server`) and formatting code with Prettier. It lists `todomvc-app-css` as a dependency, although a comment clarifies that its CSS content is copied directly into `css/index.css` rather than being used via `node_modules`.",
+    "imports": [],
+    "functions": [],
+    "classes": []
+  },
+  {
+    "file": "readme.md",
+    "summary": "This `README.md` introduces a TodoMVC application built with modern Vanilla JavaScript, emphasizing its conciseness, absence of build tools, and reliance on ES modules. It provides a live demo link, invites contributions, and documents various experimental branches showcasing different architectural patterns, performance optimizations (including `lit-html`), and TypeScript integrations. The file also showcases related UI component examples and details the project's Creative Commons license.",
+    "imports": [],
+    "functions": [],
+    "classes": []
+  }
+]
