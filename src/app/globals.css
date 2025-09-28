@@ -1,4 +1,7 @@
 @import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
   --background: #ffffff;
@@ -23,4 +26,144 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Custom styles for Mermaid diagrams */
+.mermaid-diagram {
+  @apply flex justify-center items-center my-6 p-4 bg-white rounded-3xl shadow-[4px_4px_25px_#00000040] border-[3px] border-white;
+}
+
+.mermaid-diagram svg {
+  @apply max-w-full h-auto;
+}
+
+.mermaid-placeholder {
+  @apply flex justify-center items-center my-6 p-4 bg-white rounded-3xl shadow-[4px_4px_25px_#00000040] border-[3px] border-white min-h-[200px];
+}
+
+.mermaid-placeholder::before {
+  content: "Loading diagram...";
+  @apply text-[#491b72] font-mono text-sm;
+}
+
+.mermaid-placeholder.rendered::before {
+  display: none;
+}
+
+.mermaid-error {
+  @apply bg-red-100 border-[3px] border-red-300 rounded-3xl p-4 my-4;
+}
+
+.mermaid-error pre {
+  @apply text-red-700 text-sm font-mono;
+}
+
+/* Custom prose styles for markdown content */
+.prose {
+  --tw-prose-body: #491b72;
+  --tw-prose-headings: #491b72;
+  --tw-prose-lead: #491b72;
+  --tw-prose-links: #7f66b3;
+  --tw-prose-bold: #491b72;
+  --tw-prose-counters: #491b72;
+  --tw-prose-bullets: #491b72;
+  --tw-prose-hr: #e5e7eb;
+  --tw-prose-quotes: #491b72;
+  --tw-prose-quote-borders: #e5e7eb;
+  --tw-prose-captions: #6b7280;
+  --tw-prose-code: #491b72;
+  --tw-prose-pre-code: #491b72;
+  --tw-prose-pre-bg: #ececec;
+  --tw-prose-th-borders: #d1d5db;
+  --tw-prose-td-borders: #e5e7eb;
+}
+
+/* Proper heading hierarchy with bigger headers */
+.prose h1 {
+  @apply text-4xl font-bold text-[#491b72] mt-8 mb-6 leading-tight;
+}
+
+.prose h2 {
+  @apply text-3xl font-bold text-[#491b72] mt-8 mb-5 leading-tight;
+}
+
+.prose h3 {
+  @apply text-2xl font-bold text-[#491b72] mt-6 mb-4 leading-tight;
+}
+
+.prose h4 {
+  @apply text-xl font-bold text-[#491b72] mt-6 mb-4 leading-tight;
+}
+
+.prose h5 {
+  @apply text-lg font-bold text-[#491b72] mt-4 mb-3 leading-tight;
+}
+
+.prose h6 {
+  @apply text-base font-bold text-[#491b72] mt-4 mb-3 leading-tight;
+}
+
+/* Add spacing after headers */
+.prose h1 + *,
+.prose h2 + *,
+.prose h3 + *,
+.prose h4 + *,
+.prose h5 + *,
+.prose h6 + * {
+  @apply mt-4;
+}
+
+/* Better paragraph spacing */
+.prose p {
+  @apply mb-4 leading-relaxed;
+}
+
+.prose p + h1,
+.prose p + h2,
+.prose p + h3,
+.prose p + h4,
+.prose p + h5,
+.prose p + h6 {
+  @apply mt-8;
+}
+
+.prose li {
+  @apply leading-relaxed;
+}
+
+.prose code {
+  @apply bg-gray-200 px-2 py-1 rounded-lg text-red-600 font-mono border border-gray-300;
+}
+
+.prose pre {
+  @apply bg-[#ececec] rounded-3xl shadow-[2px_2px_15px_#00000020] border-[2px] border-white mb-6 px-8 py-6;
+}
+
+.prose pre code {
+  @apply bg-transparent text-green-700 font-mono p-0 border-0;
+}
+
+.prose ul, .prose ol {
+  @apply space-y-2 mb-6;
+}
+
+.prose blockquote {
+  @apply border-l-4 border-purple-300 bg-purple-50 pl-6 py-4 rounded-r-lg mb-6;
+}
+
+/* Better spacing between sections */
+.prose > * + * {
+  @apply mt-4;
+}
+
+.prose > h1 + *,
+.prose > h2 + *,
+.prose > h3 + * {
+  @apply mt-6;
 }

@@ -4,8 +4,10 @@ import React from "react";
 import Diagram from "./components/Diagram";
 import Sidebar from "./components/Sidebar";
 import { Repository, CurrentView } from "./components/types";
-import { sampleRepositories, sampleDiagrams, UI_CONSTANTS, API_CONFIG, PROCESS_REPOSITORY_ID } from "./components/constants";
-import { ApiService, RepositoryService, UIUtils, ErrorHandler } from "./components/utils";
+import { sampleDiagrams, UI_CONSTANTS, API_CONFIG, PROCESS_REPOSITORY_ID } from "./components/constants";
+import { ApiService, RepositoryService, UIUtils, ErrorHandler, MermaidUtils } from "./components/utils";
+import { useMermaidRenderer } from "./components/useMermaidRenderer";
+import { MarkdownParserService } from "./components/MarkdownParserService";
 
 export default function App() {
   const [linkInput, setLinkInput] = React.useState("");
@@ -13,13 +15,233 @@ export default function App() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
-  const [repositories, setRepositories] = React.useState<Repository[]>(sampleRepositories);
+  const [repositories, setRepositories] = React.useState<Repository[]>([]);
   const [currentRepo, setCurrentRepo] = React.useState<string>("");
   const [currentView, setCurrentView] = React.useState<CurrentView | null>(null);
+
+  // Track loaded JSON files and their data
+  const [jsonFiles, setJsonFiles] = React.useState<string[]>([]);
+  const [loadedData, setLoadedData] = React.useState<Map<string, any>>(new Map());
+  const [change, setChange] = React.useState(0); // State to trigger re-fetching file list
+
+  // State for parsed relationship summary - moved to top level to fix hooks order
+  const [parsedSummary, setParsedSummary] = React.useState<string>('');
+
+  // Initialize Mermaid renderer
+  useMermaidRenderer();
+
+  // Parse the relationship summary markdown when repository changes - moved to top level
+  React.useEffect(() => {
+    const parseRelationshipSummary = async () => {
+      if (currentView && repositories.length > 0) {
+        const repo = RepositoryService.findRepositoryById(repositories, currentView.repo);
+        if (repo?.metadata?.relationshipSummary) {
+          const parser = MarkdownParserService.getInstance();
+          const htmlContent = await parser.parseMarkdownToHTML(repo.metadata.relationshipSummary);
+          setParsedSummary(htmlContent);
+        } else {
+          setParsedSummary('');
+        }
+      }
+    };
+    
+    parseRelationshipSummary();
+  }, [currentView, repositories]); // Dependencies: currentView and repositories
+
+  // Load available JSON files from backend API
+  React.useEffect(() => {
+    const loadAvailableFiles = async () => {
+      try {
+        console.log('Fetching files from backend...');
+        const response = await fetch('/api/files');
+        if (response.ok) {
+          const { files } = await response.json();
+          console.log('Files received from backend:', files);
+          setJsonFiles(files);
+        } else {
+          console.error('Failed to load file list from backend', response.status, response.statusText);
+        }
+      } catch (error) {
+        console.error('Error loading file list:', error);
+      }
+    };
+
+    loadAvailableFiles();
+  }, [change]);
+
+  // Load repositories whenever jsonFiles changes or when we need to load data
+  React.useEffect(() => {
+    const loadRepositoriesAsync = async () => {
+      console.log('Loading repositories for files:', jsonFiles);
+      const repositories: Repository[] = [];
+      const newLoadedData = new Map(loadedData);
+      
+      // Load each JSON file
+      for (const fileName of jsonFiles) {
+        try {
+          let data = loadedData.get(fileName);
+          
+          // If data isn't loaded yet, fetch it from the backend
+          if (!data) {
+            console.log(`Fetching data for ${fileName}...`);
+            const response = await fetch(`/api/data/${fileName}`);
+            if (response.ok) {
+              data = await response.json();
+              console.log(`Data loaded for ${fileName}:`, data);
+              newLoadedData.set(fileName, data);
+            } else {
+              console.warn(`Failed to load ${fileName} from backend`, response.status);
+              continue;
+            }
+          }
+          
+          // Create repository from JSON data - pass data directly
+          const fileNameWithoutExtension = fileName.replace('.json', '');
+          const repository = await parseJsonToRepository(data, fileNameWithoutExtension);
+          console.log(`Repository created for ${fileName}:`, repository);
+          repositories.push(repository);
+        } catch (error) {
+          console.warn(`Could not load ${fileName}:`, error);
+        }
+      }
+      
+      // Update loaded data state
+      setLoadedData(newLoadedData);
+      
+      // Create the Process Repository
+      const processRepo: Repository = {
+        id: PROCESS_REPOSITORY_ID,
+        title: "Process Repository!",
+        chapters: []
+      };
+      
+      // Combine Process Repository at the beginning with loaded repositories
+      const allRepos = [processRepo, ...repositories];
+      console.log('Final repositories array:', allRepos);
+      setRepositories(allRepos);
+    };
+
+    if (jsonFiles.length > 0) {
+      loadRepositoriesAsync();
+    } else {
+      console.log('No JSON files to load, jsonFiles array is empty:', jsonFiles);
+    }
+  }, [jsonFiles]); // Only depend on jsonFiles, not loadedData to avoid infinite loops
+
+  // Function to refresh the file list from backend (useful for adding new files)
+  const refreshFileList = async () => {
+    try {
+      const response = await fetch('/api/files');
+      if (response.ok) {
+        const { files } = await response.json();
+        setJsonFiles(files);
+      }
+    } catch (error) {
+      console.error('Error refreshing file list:', error);
+    }
+  };
+
+  // Function to save a new JSON file to the backend
+  const saveJsonFile = async (fileName: string, content: any) => {
+    try {
+      const response = await fetch('/api/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fileName,
+          content: JSON.stringify(content, null, 2)
+        })
+      });
+      
+      if (response.ok) {
+        // Refresh the file list to include the new file
+        setChange(change + 1); // Trigger re-fetching file list
+        await refreshFileList();
+      } else {
+        console.error('Failed to save file to backend');
+      }
+    } catch (error) {
+      console.error('Error saving file:', error);
+    }
+  };
+
+  // Helper function to parse JSON data into Repository format - now with proper markdown parsing
+  const parseJsonToRepository = async (jsonData: any, fileName: string): Promise<Repository> => {
+    const {status, result, payload, steps} = jsonData;
+    const {repoUrl} = payload || {};
+    const { abstractionsList, chapters, relationshipSummary, relationships} = result;
+    
+    // Create a more unique repository ID to avoid duplicates
+    const timestamp = Date.now();
+    const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9]/g, '-');
+    const repositoryId = `repo-${sanitizedFileName}-${timestamp}`;
+    
+    const repositoryTitle = repoUrl.split("github.com/")[1] || fileName || 'Repository Tutorial';
+    const parsedChapters: any[] = [];
+    
+    // Get the markdown parser instance
+    const parser = MarkdownParserService.getInstance();
+    
+    // Create chapters from the abstractionsList and chapters array
+    if (abstractionsList && chapters) {
+      for (let i = 0; i < abstractionsList.length && i < chapters.length; i++) {
+        const chapterTitle = abstractionsList[i];
+        const chapterMarkdown = chapters[i];
+        const chapterId = `ch${i + 1}`;
+        const chapterPath = chapterTitle
+          .toLowerCase()
+          .replace(/[^a-z0-9\s]/g, '')
+          .replace(/\s+/g, '-')
+          .replace(/^-+|-+$/g, '');
+        
+        // Parse markdown to HTML using the MarkdownParserService
+        const htmlContent = await parser.parseMarkdownToHTML(chapterMarkdown);
+        
+        // Extract description from the first paragraph
+        const description = chapterMarkdown
+          .split('\n')
+          .find(line => line.trim() && !line.startsWith('#') && !line.startsWith('```'))
+          ?.trim()
+          .substring(0, 200) + '...' || 'Chapter content...';
+        
+        parsedChapters.push({
+          id: chapterId,
+          title: chapterTitle,
+          path: chapterPath,
+          content: {
+            title: chapterTitle,
+            description,
+            htmlContent,
+            rawMarkdown: chapterMarkdown
+          }
+        });
+      }
+    }
+
+    return {
+      id: repositoryId,
+      title: repositoryTitle,
+      chapters: parsedChapters,
+      metadata: {
+        repoUrl: repoUrl || '',
+        relationshipSummary: relationshipSummary || '',
+        abstractionsList: abstractionsList || [],
+        relationships: relationships || []
+      }
+    };
+  };
 
   const handleSubmit = async () => {
     if (!linkInput.trim()) {
       setOutput("Please enter a repository link");
+      return;
+    }
+    // Check if the repository name already exists
+    const existingRepo = repositories.find(repo => repo.title === linkInput.trim().split("github.com/")[1]);
+    if (existingRepo) {
+      setOutput("A repository with this name already exists, you can find it in the sidebar!");
       return;
     }
 
@@ -40,6 +262,20 @@ export default function App() {
       // Step 3: Poll execution result
       const finalResult = await ApiService.pollExecutionResult(runId, setOutput);
       setOutput(JSON.stringify(finalResult, null, 2));
+      // Save the output as a JSON file
+      const fileName = `output-${Date.now()}.json`;
+
+      try {
+        const fileContent = new Blob([JSON.stringify(finalResult, null, 2)], { type: "application/json" });
+        const fileUrl = URL.createObjectURL(fileContent);
+
+        await saveJsonFile(fileName, finalResult);
+
+        // Add the new file to the jsonFiles state
+        setJsonFiles(prev => [...prev, fileName]);
+      } catch (error) {
+        console.error("Failed to save output as JSON file:", error);
+      }
       
       // Create repository from result
       const newRepo = RepositoryService.createRepositoryFromUrl(linkInput, finalResult);
@@ -158,6 +394,41 @@ export default function App() {
         <div className="space-y-6">
           <h1 className="text-3xl font-bold text-[#491b72]">{repo.title}</h1>
           <p className="text-[#491b72] font-mono">Repository Overview</p>
+          {/* Display relationship summary if available */}
+          {repo.metadata?.relationshipSummary && (
+            <div className="bg-white/60 p-6 rounded-3xl shadow-[2px_2px_15px_#00000020] border-[2px] border-white/40">
+              <h2 className="text-xl font-bold text-[#491b72] mb-3">Project Summary</h2>
+              <div 
+                className="text-[#491b72] font-mono leading-relaxed prose prose-sm max-w-none"
+                dangerouslySetInnerHTML={{ __html: parsedSummary }}
+                style={{
+                  '--tw-prose-body': '#491b72',
+                  '--tw-prose-headings': '#491b72',
+                  '--tw-prose-links': '#7f66b3',
+                  '--tw-prose-bold': '#491b72',
+                  '--tw-prose-italic': '#6b46c1',
+                } as React.CSSProperties}
+              />
+            </div>
+          )}
+
+          {/* Display Mermaid relationship diagram if data is available */}
+          {repo.metadata?.abstractionsList && repo.metadata?.relationships && (
+            <div className="bg-white/60 p-6 rounded-3xl shadow-[2px_2px_15px_#00000020] border-[2px] border-white/40">
+              <h2 className="text-xl font-bold text-[#491b72] mb-3">Project Architecture</h2>
+              <div 
+                className="mermaid-container"
+                dangerouslySetInnerHTML={{ 
+                  __html: MermaidUtils.generateMermaidPlaceholder(
+                    repo.metadata.abstractionsList, 
+                    repo.metadata.relationships
+                  )
+                }}
+              />
+            </div>
+          )}
+          
+          <p className="text-[#491b72] font-mono">Table of Contents</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {repo.chapters.map((chapter) => (
               <div
@@ -166,7 +437,11 @@ export default function App() {
                 className="bg-[#ececec] p-6 rounded-3xl shadow-[4px_4px_25px_#00000040] hover:shadow-[6px_6px_30px_#00000060] cursor-pointer transition-all duration-300 border-[3px] border-white"
               >
                 <h3 className="font-bold text-[#491b72] text-lg mb-2">{chapter.title}</h3>
-                <p className="text-sm text-[#491b72] font-mono">Click to view this chapter</p>
+                {chapter.content && (
+                  <p className="text-xs text-[#491b72] font-mono mt-2 opacity-70">
+                    {chapter.content.description.substring(0, 50)}...
+                  </p>
+                )}
               </div>
             ))}
           </div>
@@ -177,8 +452,6 @@ export default function App() {
     // Show specific chapter
     const chapter = RepositoryService.findChapterByPath(repo, currentView.chapter);
     if (!chapter) return <div className="text-[#491b72] font-mono">Chapter not found</div>;
-
-    const chapterContent = UIUtils.getChapterContent(chapter.path);
 
     return (
       <div className="space-y-6">
@@ -195,27 +468,28 @@ export default function App() {
         
         <h1 className="text-3xl font-bold text-[#491b72]">{chapter.title}</h1>
         
-        <div className="bg-[#ececec] rounded-2xl shadow-[2px_2px_15px_#00000040] p-6 border-[3px] border-white">
-          <h2 className="text-xl font-bold mb-4 text-[#491b72]">Content for {chapter.title}</h2>
-          <p className="text-[#491b72] mb-4 font-mono">
-            This is the content for {chapter.title} in the {repo.title} repository.
-          </p>
-          
-          {/* Dynamic chapter content */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-bold text-[#491b72]">{chapterContent.title}</h3>
-            <p className="text-[#491b72] font-mono">
-              {chapterContent.description}
+        {/* Render HTML content from markdown */}
+        {chapter.content?.htmlContent ? (
+          <div 
+            className="prose prose-lg max-w-none text-[#491b72] font-mono"
+            dangerouslySetInnerHTML={{ __html: chapter.content.htmlContent }}
+            style={{
+              // Custom styles for the rendered markdown
+              '--tw-prose-body': '#491b72',
+              '--tw-prose-headings': '#491b72',
+              '--tw-prose-links': '#7f66b3',
+              '--tw-prose-code': '#491b72',
+              '--tw-prose-pre-bg': '#ececec',
+            } as React.CSSProperties}
+          />
+        ) : (
+          <div className="bg-[#ececec] rounded-2xl shadow-[2px_2px_15px_#00000040] p-6 border-[3px] border-white">
+            <h2 className="text-xl font-bold mb-4 text-[#491b72]">Content for {chapter.title}</h2>
+            <p className="text-[#491b72] mb-4 font-mono">
+              {chapter.content?.description || 'Loading chapter content...'}
             </p>
-            {chapterContent.items.length > 0 && (
-              <ul className="list-disc list-inside text-[#491b72] space-y-2 font-mono">
-                {chapterContent.items.map((item, index) => (
-                  <li key={index}>{item}</li>
-                ))}
-              </ul>
-            )}
           </div>
-        </div>
+        )}
       </div>
     );
   };

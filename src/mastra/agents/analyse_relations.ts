@@ -27,7 +27,7 @@ Format outputs as valid JSON with:
 
 Always ensure the output is well-structured and beginner-friendly.
     `,
-    model: google('gemini-2.5-pro'),
+    model: google('gemini-2.5-flash'),
     tools: {},
     memory,
 });

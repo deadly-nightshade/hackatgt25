@@ -45,7 +45,7 @@ Do NOT append language hints or braces (e.g., {javascript}) to names or descript
 export const IdentifyAbstractionAgent = new Agent({
     name: 'Identify Abstractions Agent',
     instructions: getInstructions(),
-    model: google('gemini-2.5-pro'),
+    model: google('gemini-2.5-flash'),
     tools: {},
     memory,
 });

@@ -49,9 +49,48 @@ export class RepositoryService {
       id: Date.now().toString(),
       title: repoName,
       chapters: [
-        { id: '1', title: 'Overview', path: 'overview' },
-        { id: '2', title: 'Code Analysis', path: 'analysis' },
-        { id: '3', title: 'Architecture', path: 'architecture' }
+        { 
+          id: '1', 
+          title: 'Overview', 
+          path: 'overview',
+          content: {
+            title: 'Repository Overview',
+            description: 'Generated overview of the repository structure and contents.',
+            items: [
+              'Repository purpose and goals',
+              'Technology stack',
+              'Getting started guide'
+            ]
+          }
+        },
+        { 
+          id: '2', 
+          title: 'Code Analysis', 
+          path: 'analysis',
+          content: {
+            title: 'Code Analysis',
+            description: 'Detailed analysis of the codebase structure and patterns.',
+            items: [
+              'Code quality metrics',
+              'Complexity analysis',
+              'Dependency relationships'
+            ]
+          }
+        },
+        { 
+          id: '3', 
+          title: 'Architecture', 
+          path: 'architecture',
+          content: {
+            title: 'System Architecture',
+            description: 'System architecture and design decisions.',
+            items: [
+              'System components',
+              'Data flow diagrams',
+              'Integration patterns'
+            ]
+          }
+        }
       ]
     };
   }
@@ -62,6 +101,32 @@ export class RepositoryService {
 
   static findChapterByPath(repository: Repository, path: string) {
     return repository.chapters.find(chapter => chapter.path === path);
+  }
+
+  static getChapterContent(repositories: Repository[], repoId: string, chapterPath: string): {
+    title: string;
+    description: string;
+    items: string[];
+  } {
+    const repository = this.findRepositoryById(repositories, repoId);
+    if (!repository) {
+      return {
+        title: "Content",
+        description: "Repository not found.",
+        items: []
+      };
+    }
+
+    const chapter = this.findChapterByPath(repository, chapterPath);
+    if (chapter?.content) {
+      return chapter.content;
+    }
+
+    return {
+      title: "Content",
+      description: "Content for this chapter is being generated...",
+      items: []
+    };
   }
 }
 
@@ -86,45 +151,15 @@ export class UIUtils {
     return url.split('/').pop() || 'Unknown Repository';
   }
 
+  // Deprecated: Use RepositoryService.getChapterContent instead
   static getChapterContent(chapterPath: string): {
     title: string;
     description: string;
     items: string[];
   } {
-    const contentMap: Record<string, { title: string; description: string; items: string[] }> = {
-      "chapter-1": {
-        title: "Introduction",
-        description: "This chapter covers the basic introduction to the codebase and its main components.",
-        items: [
-          "Project structure overview",
-          "Main entry points",
-          "Key dependencies"
-        ]
-      },
-      "chapter-2": {
-        title: "Core Functionality",
-        description: "This chapter dives into the core functionality and business logic of the application.",
-        items: [
-          "Main algorithms and processes",
-          "Data flow and transformations",
-          "API endpoints and handlers"
-        ]
-      },
-      "chapter-3": {
-        title: "Advanced Topics",
-        description: "This chapter covers advanced topics, patterns, and best practices used in the codebase.",
-        items: [
-          "Design patterns and architecture",
-          "Performance optimizations",
-          "Testing strategies",
-          "Deployment and scaling"
-        ]
-      }
-    };
-
-    return contentMap[chapterPath] || {
+    return {
       title: "Content",
-      description: "Content for this chapter is being generated...",
+      description: "Please use RepositoryService.getChapterContent for repository-specific content.",
       items: []
     };
   }
@@ -141,5 +176,103 @@ export class ErrorHandler {
 
   static isNetworkError(error: unknown): boolean {
     return axios.isAxiosError(error) && !error.response;
+  }
+}
+
+export class MermaidUtils {
+  /**
+   * Generates a valid CSS-safe ID for Mermaid diagrams
+   * @param suffix - Optional suffix to make ID unique
+   * @returns Valid CSS selector ID
+   */
+  private static generateValidDiagramId(suffix?: string): string {
+    const timestamp = Date.now();
+    const randomPart = Math.random().toString(36).substring(2, 8); // Remove 0. prefix and take 6 chars
+    const baseSuffix = suffix ? `-${suffix}` : '';
+    return `diagram-${timestamp}-${randomPart}${baseSuffix}`;
+  }
+
+  /**
+   * Generates a Mermaid flowchart diagram from abstractionsList and relationships
+   * @param abstractionsList - Array of abstraction names
+   * @param relationships - Array of relationship objects with from, to, and label
+   * @returns Mermaid diagram code as string
+   */
+  static generateMermaidDiagram(
+    abstractionsList: string[],
+    relationships: Array<{ from: number; to: number; label: string }>
+  ): string {
+    if (!abstractionsList || abstractionsList.length === 0) {
+      return 'flowchart TD\n    A[No abstractions available]';
+    }
+
+    let mermaidCode = 'flowchart TD\n';
+    
+    // Create nodes for each abstraction
+    abstractionsList.forEach((abstraction, index) => {
+      // Clean the abstraction name for use as node ID and create a readable label
+      const nodeId = `A${index}`;
+      const nodeLabel = abstraction
+        .replace(/['"]/g, '') // Remove quotes
+        .replace(/\n/g, ' ') // Replace newlines with spaces
+        .trim();
+      
+      // Use rectangular nodes with the abstraction names
+      mermaidCode += `    ${nodeId}["${nodeLabel}"]\n`;
+    });
+
+    // Add relationships if they exist
+    if (relationships && relationships.length > 0) {
+      mermaidCode += '\n';
+      relationships.forEach((rel) => {
+        const fromId = `A${rel.from}`;
+        const toId = `A${rel.to}`;
+        const label = rel.label
+          .replace(/['"]/g, '') // Remove quotes
+          .replace(/\n/g, ' ') // Replace newlines with spaces
+          .trim();
+        
+        // Create arrow with label
+        mermaidCode += `    ${fromId} -->|"${label}"| ${toId}\n`;
+      });
+    }
+
+    // Add styling for better appearance
+    mermaidCode += '\n';
+    mermaidCode += '    classDef default fill:#ececec,stroke:#491b72,stroke-width:2px,color:#491b72\n';
+    mermaidCode += '    classDef nodeText color:#491b72\n';
+
+    return mermaidCode;
+  }
+
+  /**
+   * Creates a markdown code block with Mermaid diagram
+   * @param abstractionsList - Array of abstraction names
+   * @param relationships - Array of relationship objects
+   * @returns Markdown string with Mermaid code block
+   */
+  static generateMermaidMarkdown(
+    abstractionsList: string[],
+    relationships: Array<{ from: number; to: number; label: string }>
+  ): string {
+    const mermaidCode = this.generateMermaidDiagram(abstractionsList, relationships);
+    return `\`\`\`mermaid\n${mermaidCode}\n\`\`\``;
+  }
+
+  /**
+   * Creates a Mermaid placeholder div with properly encoded data and valid ID
+   * @param abstractionsList - Array of abstraction names
+   * @param relationships - Array of relationship objects
+   * @returns HTML string with mermaid placeholder
+   */
+  static generateMermaidPlaceholder(
+    abstractionsList: string[],
+    relationships: Array<{ from: number; to: number; label: string }>
+  ): string {
+    const mermaidCode = this.generateMermaidDiagram(abstractionsList, relationships);
+    const diagramId = this.generateValidDiagramId();
+    const encodedCode = encodeURIComponent(mermaidCode);
+    
+    return `<div class="mermaid-placeholder" data-mermaid-code="${encodedCode}" data-mermaid-id="${diagramId}"></div>`;
   }
 }

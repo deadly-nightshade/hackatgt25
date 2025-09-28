@@ -23,7 +23,7 @@ When ordering abstractions:
 
 Always output as a JSON object with an "order" array containing indices for clarity.
 Focus on creating an optimal learning path that minimizes cognitive load and maximizes comprehension.`,
-    model: google('gemini-2.5-pro'),
+    model: google('gemini-2.5-flash'),
     tools: {},
     memory,
 });

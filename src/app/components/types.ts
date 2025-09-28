@@ -39,24 +39,38 @@ export interface DiagramData {
 export interface Chapter {
   id: string;
   title: string;
-  path: string;
+  content: string;  // Store markdown content directly
+  order: number;
 }
 
 export interface Repository {
   id: string;
   title: string;
   chapters: Chapter[];
+  metadata?: {
+    repoUrl: string;
+    relationshipSummary: string;
+    abstractionsList: string[];
+    relationships: Array<{
+      from: number;
+      to: number;
+      label: string;
+    }>;
+  };
 }
 
-export interface SidebarProps {
-  repositories: Repository[];
-  currentRepo?: string;
-  currentChapter?: string;
-  isOpen: boolean;
-  onToggle: () => void;
-  onNavigate: (repoId: string, chapterPath?: string) => void;
-  isCollapsed?: boolean;
-  onToggleCollapse?: () => void;
+// Legacy Chapter interface for backward compatibility
+export interface LegacyChapter {
+  id: string;
+  title: string;
+  path: string;
+  content?: {
+    title: string;
+    description: string;
+    items?: string[];
+    htmlContent?: string;
+    rawMarkdown?: string;
+  };
 }
 
 // Application state interfaces

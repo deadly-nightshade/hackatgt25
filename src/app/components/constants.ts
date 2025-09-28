@@ -1,34 +1,40 @@
 import { Repository, DiagramData } from "./types";
+import { MarkdownParserService } from "./MarkdownParserService";
 
 // Special Process Repository entry
 export const PROCESS_REPOSITORY_ID = "process-repo";
 
-// Sample sidebar data
-export const sampleRepositories: Repository[] = [
-  {
-    id: PROCESS_REPOSITORY_ID,
-    title: "Process Repository!",
-    chapters: []
-  },
-  {
-    id: "repo1",
-    title: "PocketFlow-Tutorial",
-    chapters: [
-      { id: "ch1", title: "Chapter 1", path: "chapter-1" },
-      { id: "ch2", title: "Chapter 2", path: "chapter-2" },
-      { id: "ch3", title: "Chapter 3", path: "chapter-3" }
-    ]
-  },
-  {
-    id: "repo2", 
-    title: "Codebase-Knowledge",
-    chapters: [
-      { id: "ch1", title: "Chapter 1", path: "chapter-1" },
-      { id: "ch2", title: "Chapter 2", path: "chapter-2" },
-      { id: "ch3", title: "Chapter 3", path: "chapter-3" }
-    ]
+// Initialize markdown parser
+const markdownParser = MarkdownParserService.getInstance();
+
+// Function to load repositories from markdown
+export async function loadRepositories(): Promise<Repository[]> {
+  try {
+    // Load repositories from test.md
+    const markdownRepositories = await markdownParser.loadTestMarkdownFile();
+    
+    // Add the Process Repository at the beginning
+    const processRepo: Repository = {
+      id: PROCESS_REPOSITORY_ID,
+      title: "Process Repository!",
+      chapters: []
+    };
+    
+    return [processRepo, ...markdownRepositories];
+  } catch (error) {
+    console.error('Error loading repositories from markdown:', error);
+    // Fallback to process repo only
+    return [{
+      id: PROCESS_REPOSITORY_ID,
+      title: "Process Repository!",
+      chapters: []
+    }];
   }
-];
+}
+
+// For backward compatibility, export empty array initially
+// This will be populated dynamically in the component
+export const sampleRepositories: Repository[] = [];
 
 // Sample diagram data
 export const sampleDiagrams: DiagramData[] = [

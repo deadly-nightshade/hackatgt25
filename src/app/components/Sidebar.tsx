@@ -43,9 +43,10 @@ export default function Sidebar({
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         lg:translate-x-0 lg:static lg:z-auto
         ${isCollapsed ? 'lg:w-16 xl:w-16' : 'w-80 lg:w-64 xl:w-80'}
+        flex flex-col
       `}>
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b-[3px] border-white bg-[linear-gradient(103deg,rgba(120,127,227,1)_0%,rgba(128,66,182,1)_100%)]">
+        <div className="flex items-center justify-between px-4 py-3 border-b-[3px] border-white bg-[linear-gradient(103deg,rgba(120,127,227,1)_0%,rgba(128,66,182,1)_100%)] flex-shrink-0">
           {!isCollapsed && (
             <h2 className="text-lg font-bold text-white">Navigation</h2>
           )}
@@ -81,8 +82,8 @@ export default function Sidebar({
           </div>
         </div>
 
-        {/* Navigation Content */}
-        <div className="flex-1 overflow-y-auto p-4">
+        {/* Navigation Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 scrollbar-thin scrollbar-thumb-purple-300 scrollbar-track-transparent">
           {repositories.length === 0 ? (
             <div className={`text-[#491b72] text-sm italic font-mono ${isCollapsed ? 'text-center' : ''}`}>
               {isCollapsed ? "..." : "No repositories loaded yet"}
@@ -145,9 +146,9 @@ export default function Sidebar({
         </div>
 
         {/* Footer */}
-        <div className="border-t-[3px] border-white p-4 bg-white/20">
+        <div className="border-t-[3px] border-white p-4 bg-white/20 flex-shrink-0">
           <div className={`text-xs text-[#491b72] font-mono font-bold ${isCollapsed ? 'text-center' : ''}`}>
-            {isCollapsed ? "v1.0" : "GitGood v1.0"}
+            {isCollapsed ? "v1.0" : <>Git Good v1.0<br />Made with blood, sweat & tears by Archit, Kai Wen, Ishan, Sienna</>}
           </div>
         </div>
       </div>
