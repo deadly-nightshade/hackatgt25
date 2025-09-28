@@ -132,7 +132,7 @@ function Diagram({ inputData }: DiagramProps) {
                       .map((c: any, idx: number) => (idx === i ? null : c?.name))
                       .filter(Boolean) as string[];
                     const allFunctionNames = (inputData.classes ?? [])
-                      .map((c: any) => c.popupFunctionNames ?? ["function_name()"])
+                      .map((c: any) => c.popupFunctionNames ?? [""])
                       .flat();
                     let pruned = prev.filter(
                       (name) =>
@@ -157,7 +157,7 @@ function Diagram({ inputData }: DiagramProps) {
             {/* Class popups */}
             {(inputData.classes ?? []).map((cls: any) => {
               if (!openCards.includes(cls.name)) return null;
-              const functionNames: string[] = cls.popupFunctionNames ?? ["function_name()"];
+              const functionNames: string[] = cls.popupFunctionNames ?? [""];
               const nestedClass = cls.nestedClass ?? "Blahblah(Node)";
               const nestedClassTitle = nestedClass.replace(/\(.*\)/, "");
               const nestedExplanation = cls.nestedExplanation ?? `explanation for ${nestedClassTitle}`;
@@ -182,7 +182,7 @@ function Diagram({ inputData }: DiagramProps) {
                           onClick: () => {
                             setOpenCards((prev) => {
                               const allFunctionNames = (inputData.classes ?? [])
-                                .map((c: any) => c.popupFunctionNames ?? ["function_name()"])
+                                .map((c: any) => c.popupFunctionNames ?? [""])
                                 .flat();
                               let pruned = prev.filter(
                                 (name) => !allFunctionNames.includes(name)

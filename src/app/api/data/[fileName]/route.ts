@@ -4,6 +4,7 @@ import path from "path";
 import { NextResponse, NextRequest } from "next/server";
 
 const DATA_DIR = path.join(process.cwd(), "data");
+const CODE_DATA_DIR = path.join(process.cwd(), "data/code");
 
 export async function GET(req: NextRequest) {
   // await the params from the request
@@ -14,7 +15,13 @@ export async function GET(req: NextRequest) {
   const parts = pathname.split('/');
   const fileName = decodeURIComponent(parts[parts.length - 1]);
 
-  const filePath = path.join(DATA_DIR, fileName);
+  // First try the regular data directory
+  let filePath = path.join(DATA_DIR, fileName);
+  
+  // If not found, try the code directory
+  if (!fs.existsSync(filePath)) {
+    filePath = path.join(CODE_DATA_DIR, fileName);
+  }
 
   if (fs.existsSync(filePath)) {
     const content = fs.readFileSync(filePath, "utf-8");

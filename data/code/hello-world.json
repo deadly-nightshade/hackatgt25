@@ -1,0 +1,17 @@
+{ "repoUrl": "https://github.com/lucianopereira86/Python-HelloWorld",
+    "aiAnalysis": [
+    {
+      "file": "README.md",
+      "summary": "This README provides a step-by-step guide on how to set up a Python development environment and run a simple 'Hello World' program. It includes instructions for downloading Python, installing Visual Studio Code with the Python extension, creating a Python file, and executing it from the terminal. The guide is augmented with images illustrating the process.",
+      "imports": [],
+      "functions": [],
+      "classes": []
+    },
+    {
+      "file": "helloworld.py",
+      "summary": "This is a very simple Python script that prints the string 'Hello World' to the console. It serves as a basic example of Python execution and is commonly used as a first program when learning a new language.",
+      "imports": [],
+      "functions": [],
+      "classes": []
+    }
+  ]}

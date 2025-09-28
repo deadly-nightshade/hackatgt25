@@ -113,7 +113,17 @@ function MultiDiagram({ inputData }: DiagramProps) {
                   keyword: "def",
                   name: fn.signature,
                   isOpen: openCards.includes(fn.signature),
-                  onClick: () => toggle(fn.signature),
+                  onClick: () => {
+                    setOpenCards((prev) => {
+                      // Get all function signatures to close other functions
+                      const allFunctionSignatures = (selectedFile.functions ?? []).map(f => f.signature);
+                      // Remove all function popups from previous state
+                      const withoutFunctions = prev.filter(name => !allFunctionSignatures.includes(name));
+                      // If this function is currently open, close it; otherwise open it
+                      const currentlyOpen = prev.includes(fn.signature);
+                      return currentlyOpen ? withoutFunctions : [...withoutFunctions, fn.signature];
+                    });
+                  },
                 }))}
               />
               <Xarrow start="summary-card" end="functions-root" color="white" strokeWidth={2} showHead={false} />
@@ -164,7 +174,7 @@ function MultiDiagram({ inputData }: DiagramProps) {
                         .map((c: any, idx: number) => (idx === i ? null : c?.name))
                         .filter(Boolean) as string[];
                       const allFunctionNames = (selectedFile.classes ?? [])
-                        .map((c: any) => c.popupFunctionNames ?? ["function_name()"])
+                        .map((c: any) => c.functions?.map((fn: any) => fn.name || fn.signature || 'unnamed_function') ?? [])
                         .flat();
                       let pruned = prev.filter(
                         (name) =>
@@ -189,7 +199,11 @@ function MultiDiagram({ inputData }: DiagramProps) {
               {/* Class popups */}
               {(selectedFile.classes ?? []).map((cls: any) => {
                 if (!openCards.includes(cls.name)) return null;
-                const functionNames: string[] = cls.popupFunctionNames ?? ["function_name()"];
+                
+                // Only show functions if they actually exist in the class
+                const actualFunctions = cls.functions ?? [];
+                const functionNames: string[] = actualFunctions.map((fn: any) => fn.name || fn.signature || 'unnamed_function');
+                
                 const nestedClass = cls.nestedClass ?? "Blahblah(Node)";
                 const nestedClassTitle = nestedClass.replace(/\(.*\)/, "");
                 const nestedExplanation = cls.nestedExplanation ?? `explanation for ${nestedClassTitle}`;
@@ -205,7 +219,7 @@ function MultiDiagram({ inputData }: DiagramProps) {
                         <Card
                           title={cls.name.replace(/\(.*\)/, "")}
                           description={cls.description ?? `explanation for ${cls.name.replace(/\(.*\)/, "")}`}
-                          nestedItems={functionNames.map((fnName) => ({
+                          nestedItems={actualFunctions.length > 0 ? functionNames.map((fnName) => ({
                             id: `innerfn-${fnName}`,
                             label: `def ${fnName}`,
                             keyword: "def",
@@ -214,7 +228,7 @@ function MultiDiagram({ inputData }: DiagramProps) {
                             onClick: () => {
                               setOpenCards((prev) => {
                                 const allFunctionNames = (selectedFile.classes ?? [])
-                                  .map((c: any) => c.popupFunctionNames ?? ["function_name()"])
+                                  .map((c: any) => (c.functions ?? []).map((fn: any) => fn.name || fn.signature || 'unnamed_function'))
                                   .flat();
                                 let pruned = prev.filter(
                                   (name) => !allFunctionNames.includes(name)
@@ -225,7 +239,7 @@ function MultiDiagram({ inputData }: DiagramProps) {
                                   : [fnName, ...pruned];
                               });
                             },
-                          }))}
+                          })) : []}
                         />
                       </div>
                       <Xarrow
@@ -240,10 +254,11 @@ function MultiDiagram({ inputData }: DiagramProps) {
                       />
                     </div>
 
-                    {/* Function popups inside class */}
-                    {functionNames.map((fnName) => {
+                    {/* Function popups inside class - only show if functions exist */}
+                    {actualFunctions.length > 0 && functionNames.map((fnName) => {
                       if (!openCards.includes(fnName)) return null;
                       const functionTitle = fnName.replace(/\(.*\)/, "");
+                      const functionData = actualFunctions.find((fn: any) => (fn.name || fn.signature) === fnName);
                       return (
                         <div
                           key={fnName + "-popup"}
@@ -251,7 +266,10 @@ function MultiDiagram({ inputData }: DiagramProps) {
                           className="relative w-full flex justify-center mt-2"
                         >
                           <div className="w-full max-w-sm lg:max-w-md xl:max-w-lg">
-                            <Card title={functionTitle} description={`explanation for ${functionTitle}`} />
+                            <Card 
+                              title={functionTitle} 
+                              description={functionData?.description ?? `explanation for ${functionTitle}`} 
+                            />
                           </div>
                           <Xarrow
                             start={`innerfn-${fnName}`}

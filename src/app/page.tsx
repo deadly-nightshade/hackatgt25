@@ -31,7 +31,7 @@ export default function App() {
   const [codeChange, setCodeChange] = React.useState(0); // State to trigger re-fetching code file list
 
   // State for parsed relationship summary - moved to top level to fix hooks order
-  const [parsedSummary, setParsedSummary] = React.useState<string>('');
+  const [parsedSummary, setParsedSummary] = React.useState<string>("");
 
   // Initialize Mermaid renderer
   useMermaidRenderer();
@@ -46,11 +46,11 @@ export default function App() {
           const htmlContent = await parser.parseMarkdownToHTML(repo.metadata.relationshipSummary);
           setParsedSummary(htmlContent);
         } else {
-          setParsedSummary('');
+          setParsedSummary("");
         }
       }
     };
-    
+
     parseRelationshipSummary();
   }, [currentView, repositories]); // Dependencies: currentView and repositories
 
@@ -58,17 +58,17 @@ export default function App() {
   React.useEffect(() => {
     const loadAvailableFiles = async () => {
       try {
-        console.log('Fetching files from backend...');
-        const response = await fetch('/api/files');
+        console.log("Fetching files from backend...");
+        const response = await fetch("/api/files");
         if (response.ok) {
           const { files } = await response.json();
-          console.log('Files received from backend:', files);
+          console.log("Files received from backend:", files);
           setJsonFiles(files);
         } else {
-          console.error('Failed to load file list from backend', response.status, response.statusText);
+          console.error("Failed to load file list from backend", response.status, response.statusText);
         }
       } catch (error) {
-        console.error('Error loading file list:', error);
+        console.error("Error loading file list:", error);
       }
     };
 
@@ -79,17 +79,27 @@ export default function App() {
   React.useEffect(() => {
     const loadAvailableCodeFiles = async () => {
       try {
-        console.log('Fetching code files from backend...');
-        const response = await fetch('/api/code');
+        console.log("Fetching code files from backend...");
+        const response = await fetch("/api/code");
         if (response.ok) {
-          const { files } = await response.json();
-          console.log('Code files received from backend:', files);
-          setCodeFiles(files);
+          const data = await response.json();
+          console.log("Code files response from backend:", data);
+          
+          // Check if the response has the expected structure
+          if (data && Array.isArray(data.files)) {
+            console.log("Code files received from backend:", data.files);
+            setCodeFiles(data.files);
+          } else {
+            console.warn("Unexpected response structure from /api/code:", data);
+            setCodeFiles([]); // Set empty array as fallback
+          }
         } else {
-          console.error('Failed to load code file list from backend', response.status, response.statusText);
+          console.error("Failed to load code file list from backend", response.status, response.statusText);
+          setCodeFiles([]); // Set empty array as fallback
         }
       } catch (error) {
-        console.error('Error loading code file list:', error);
+        console.error("Error loading code file list:", error);
+        setCodeFiles([]); // Set empty array as fallback
       }
     };
 
@@ -99,15 +109,15 @@ export default function App() {
   // Load repositories whenever jsonFiles changes or when we need to load data
   React.useEffect(() => {
     const loadRepositoriesAsync = async () => {
-      console.log('Loading repositories for files:', jsonFiles);
+      console.log("Loading repositories for files:", jsonFiles);
       const repositories: Repository[] = [];
       const newLoadedData = new Map(loadedData);
-      
+
       // Load each JSON file
       for (const fileName of jsonFiles) {
         try {
           let data = loadedData.get(fileName);
-          
+
           // If data isn't loaded yet, fetch it from the backend
           if (!data) {
             console.log(`Fetching data for ${fileName}...`);
@@ -121,9 +131,9 @@ export default function App() {
               continue;
             }
           }
-          
+
           // Create repository from JSON data - pass data directly
-          const fileNameWithoutExtension = fileName.replace('.json', '');
+          const fileNameWithoutExtension = fileName.replace(".json", "");
           const repository = await parseJsonToRepository(data, fileNameWithoutExtension);
           console.log(`Repository created for ${fileName}:`, repository);
           repositories.push(repository);
@@ -131,97 +141,89 @@ export default function App() {
           console.warn(`Could not load ${fileName}:`, error);
         }
       }
-      
+
       // Update loaded data state
       setLoadedData(newLoadedData);
-      
+
       // Create the Process Repository
       const processRepo: Repository = {
         id: PROCESS_REPOSITORY_ID,
         title: "Process Repository!",
-        chapters: []
+        chapters: [],
       };
-      
+
       // Combine Process Repository at the beginning with loaded repositories
       const allRepos = [processRepo, ...repositories];
-      console.log('Final repositories array:', allRepos);
+      console.log("Final repositories array:", allRepos);
       setRepositories(allRepos);
     };
 
     if (jsonFiles.length > 0) {
       loadRepositoriesAsync();
     } else {
-      console.log('No JSON files to load, jsonFiles array is empty:', jsonFiles);
+      console.log("No JSON files to load, jsonFiles array is empty:", jsonFiles);
     }
   }, [jsonFiles]); // Only depend on jsonFiles, not loadedData to avoid infinite loops
 
   // NEW: Load code diagram data for each file and group by repository
   React.useEffect(() => {
     const loadCodeDataAsync = async () => {
-      console.log('Loading code diagram data for files:', codeFiles);
-      const newLoadedCodeData = new Map(loadedCodeData);
-      
-      // Group files by repository URL
-      const repoGroups = new Map<string, DiagramData[]>();
-      
+      console.log("Loading code diagram data for files:", codeFiles);
+      const newLoadedCodeData = new Map<string, DiagramData[]>();
+
       for (const fileName of codeFiles) {
         try {
-          // Check if we already have this data loaded
-          if (!loadedCodeData.has(fileName)) {
-            console.log(`Fetching code data for ${fileName}...`);
-            const response = await fetch(`/api/data/${fileName}`);
-            if (response.ok) {
-              const data = await response.json();
-              console.log(`Code data loaded for ${fileName}:`, data);
-              
-              // Transform the data to match DiagramData interface
-              const diagramData: DiagramData = {
-                title: data.repoUrl ? data.repoUrl.split('/').pop() || 'Unknown' : 'Unknown',
-                file: data.file || fileName.replace('.json', ''),
-                summary: data.summary || 'No summary available',
-                imports: data.imports || [],
-                functions: data.functions || [],
-                classes: data.classes || [],
-                constants: data.constants || []
-              };
+          console.log(`Fetching code data for ${fileName}...`);
+          const response = await fetch(`/api/data/${fileName}`);
+          if (response.ok) {
+            const data = await response.json();
+            console.log(`Code data loaded for ${fileName}:`, data);
 
-              // Group by repository URL
-              const repoUrl = data.repoUrl || 'unknown-repo';
-              if (!repoGroups.has(repoUrl)) {
-                repoGroups.set(repoUrl, []);
-              }
-              repoGroups.get(repoUrl)!.push(diagramData);
-              
-              newLoadedCodeData.set(fileName, diagramData);
-            } else {
-              console.warn(`Failed to load code data for ${fileName}`, response.status);
+            // Extract repoUrl and aiAnalysis from the JSON structure
+            const { repoUrl, aiAnalysis } = data;
+
+            if (!repoUrl || !aiAnalysis || !Array.isArray(aiAnalysis)) {
+              console.warn(`Invalid data structure in ${fileName}:`, { repoUrl, aiAnalysis });
+              continue;
             }
+
+            console.log(`Processing ${aiAnalysis.length} files from ${fileName}`);
+
+            // Transform each item in aiAnalysis to DiagramData format
+            const diagramDataArray: DiagramData[] = aiAnalysis.map((item: any, index: number) => {
+              console.log(`Processing item ${index + 1}:`, item);
+              return {
+                title: item.file || `File ${index + 1}`,
+                file: item.file || `unknown-file-${index}`,
+                summary: item.summary || "No summary available",
+                imports: item.imports || [],
+                functions: item.functions || [],
+                classes: item.classes || [],
+                constants: item.constants || [],
+              };
+            });
+
+            // Normalize the repo URL for consistent matching
+            const normalizedRepoUrl = repoUrl
+              .replace("https://github.com/", "")
+              .replace("http://github.com/", "")
+              .toLowerCase();
+
+            console.log(`Normalized repo URL: ${normalizedRepoUrl}`);
+
+            // Store the diagram data array for this repository
+            newLoadedCodeData.set(normalizedRepoUrl, diagramDataArray);
+            console.log(`Processed ${diagramDataArray.length} files for repository: ${normalizedRepoUrl}`);
           } else {
-            // Use existing data
-            const existingData = loadedCodeData.get(fileName);
-            if (existingData) {
-              const repoUrl = existingData.title || 'unknown-repo';
-              if (!repoGroups.has(repoUrl)) {
-                repoGroups.set(repoUrl, []);
-              }
-              repoGroups.get(repoUrl)!.push(existingData);
-            }
+            console.warn(`Failed to load code data for ${fileName}`, response.status);
           }
         } catch (error) {
           console.warn(`Could not load code data for ${fileName}:`, error);
         }
       }
-      
-      // Convert the grouped data to the final format
-      const finalCodeData = new Map<string, DiagramData[]>();
-      repoGroups.forEach((diagrams, repoUrl) => {
-        // Use a clean repository name as the key
-        const repoName = repoUrl.replace('https://github.com/', '').replace('http://github.com/', '');
-        finalCodeData.set(repoName, diagrams);
-      });
-      
-      setLoadedCodeData(finalCodeData);
-      console.log('Final code data mapping:', finalCodeData);
+
+      setLoadedCodeData(newLoadedCodeData);
+      console.log("Final code data mapping:", Array.from(newLoadedCodeData.entries()));
     };
 
     if (codeFiles.length > 0) {
@@ -232,59 +234,59 @@ export default function App() {
   // Function to refresh the file list from backend (useful for adding new files)
   const refreshFileList = async () => {
     try {
-      const response = await fetch('/api/files');
+      const response = await fetch("/api/files");
       if (response.ok) {
         const { files } = await response.json();
         setJsonFiles(files);
       }
     } catch (error) {
-      console.error('Error refreshing file list:', error);
+      console.error("Error refreshing file list:", error);
     }
   };
 
   // Function to save a new JSON file to the backend
   const saveJsonFile = async (fileName: string, content: any) => {
     try {
-      const response = await fetch('/api/save', {
-        method: 'POST',
+      const response = await fetch("/api/save", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           fileName,
-          content: JSON.stringify(content, null, 2)
-        })
+          content: JSON.stringify(content, null, 2),
+        }),
       });
-      
+
       if (response.ok) {
         // Refresh the file list to include the new file
         setChange(change + 1); // Trigger re-fetching file list
         await refreshFileList();
       } else {
-        console.error('Failed to save file to backend');
+        console.error("Failed to save file to backend");
       }
     } catch (error) {
-      console.error('Error saving file:', error);
+      console.error("Error saving file:", error);
     }
   };
 
   // Helper function to parse JSON data into Repository format - now with proper markdown parsing
   const parseJsonToRepository = async (jsonData: any, fileName: string): Promise<Repository> => {
-    const {status, result, payload, steps} = jsonData;
-    const {repoUrl} = payload || {};
-    const { abstractionsList, chapters, relationshipSummary, relationships} = result;
-    
+    const { status, result, payload, steps } = jsonData;
+    const { repoUrl } = payload || {};
+    const { abstractionsList, chapters, relationshipSummary, relationships } = result;
+
     // Create a more unique repository ID to avoid duplicates
     const timestamp = Date.now();
-    const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9]/g, '-');
+    const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9]/g, "-");
     const repositoryId = `repo-${sanitizedFileName}-${timestamp}`;
-    
-    const repositoryTitle = repoUrl.split("github.com/")[1] || fileName || 'Repository Tutorial';
+
+    const repositoryTitle = repoUrl.split("github.com/")[1] || fileName || "Repository Tutorial";
     const parsedChapters: any[] = [];
-    
+
     // Get the markdown parser instance
     const parser = MarkdownParserService.getInstance();
-    
+
     // Create chapters from the abstractionsList and chapters array
     if (abstractionsList && chapters) {
       for (let i = 0; i < abstractionsList.length && i < chapters.length; i++) {
@@ -293,22 +295,20 @@ export default function App() {
         const chapterId = `ch${i + 1}`;
         const chapterPath = chapterTitle
           .toLowerCase()
-          .replace(/[^a-z0-9\s]/g, '')
-          .replace(/\s+/g, '-')
-          .replace(/^-+|-+$/g, '');
-        
+          .replace(/[^a-z0-9\s]/g, "")
+          .replace(/\s+/g, "-")
+          .replace(/^-+|-+$/g, "");
+
         // Parse markdown to HTML using the MarkdownParserService
         const htmlContent = await parser.parseMarkdownToHTML(chapterMarkdown);
-        
+
         // Extract description from the first paragraph (explicitly type the callback)
         const firstLine = chapterMarkdown
-          .split('\n')
-          .find((line: string) => line.trim() && !line.startsWith('#') && !line.startsWith('```'));
+          .split("\n")
+          .find((line: string) => line.trim() && !line.startsWith("#") && !line.startsWith("```"));
 
-        const description = firstLine
-          ? firstLine.trim().substring(0, 200) + '...'
-          : 'Chapter content...';
-        
+        const description = firstLine ? firstLine.trim().substring(0, 200) + "..." : "Chapter content...";
+
         parsedChapters.push({
           id: chapterId,
           title: chapterTitle,
@@ -317,8 +317,8 @@ export default function App() {
             title: chapterTitle,
             description,
             htmlContent,
-            rawMarkdown: chapterMarkdown
-          }
+            rawMarkdown: chapterMarkdown,
+          },
         });
       }
     }
@@ -328,11 +328,11 @@ export default function App() {
       title: repositoryTitle,
       chapters: parsedChapters,
       metadata: {
-        repoUrl: repoUrl || '',
-        relationshipSummary: relationshipSummary || '',
+        repoUrl: repoUrl || "",
+        relationshipSummary: relationshipSummary || "",
         abstractionsList: abstractionsList || [],
-        relationships: relationships || []
-      }
+        relationships: relationships || [],
+      },
     };
   };
 
@@ -342,7 +342,7 @@ export default function App() {
       return;
     }
     // Check if the repository name already exists
-    const existingRepo = repositories.find(repo => repo.title === linkInput.trim().split("github.com/")[1]);
+    const existingRepo = repositories.find((repo) => repo.title === linkInput.trim().split("github.com/")[1]);
     if (existingRepo) {
       setOutput("A repository with this name already exists, you can find it in the sidebar!");
       return;
@@ -366,25 +366,6 @@ export default function App() {
       const finalResult = await ApiService.pollExecutionResult(runId, setOutput);
       setOutput(JSON.stringify(finalResult, null, 2));
       // Save the output as a JSON file
-      const fileName = `output-${Date.now()}.json`;
-
-      try {
-        const fileContent = new Blob([JSON.stringify(finalResult, null, 2)], { type: "application/json" });
-        const fileUrl = URL.createObjectURL(fileContent);
-
-        await saveJsonFile(fileName, finalResult);
-
-        // Add the new file to the jsonFiles state
-        setJsonFiles(prev => [...prev, fileName]);
-      } catch (error) {
-        console.error("Failed to save output as JSON file:", error);
-      }
-      
-      // Create repository from result
-      const newRepo = RepositoryService.createRepositoryFromUrl(linkInput, finalResult);
-      setRepositories(prev => [...prev, newRepo]);
-      setCurrentRepo(newRepo.id);
-      
     } catch (error) {
       setOutput(ErrorHandler.handleApiError(error));
     } finally {
@@ -409,36 +390,64 @@ export default function App() {
     setSidebarOpen(false);
   };
 
-  // NEW: Function to get diagram data for current repository
+  // NEW: Function to get diagram data for current repository - enhanced matching
   const getCurrentRepoDiagramData = (): DiagramData[] => {
+    console.log("getCurrentRepoDiagramData called");
+    console.log("currentView:", currentView);
+    console.log("PROCESS_REPOSITORY_ID:", PROCESS_REPOSITORY_ID);
+
     if (!currentView || currentView.repo === PROCESS_REPOSITORY_ID) {
+      console.log("Using sample diagrams (no current view or process repo)");
       return sampleDiagrams; // Fallback to sample data
     }
-    
+
     const repo = RepositoryService.findRepositoryById(repositories, currentView.repo);
+    console.log("Found repository:", repo);
+
     if (!repo?.metadata?.repoUrl) {
+      console.log("No repo metadata found, using sample diagrams");
       return sampleDiagrams;
     }
-    
-    // Clean the repo URL to match our key format
-    const repoKey = repo.metadata.repoUrl
-      .replace('https://github.com/', '')
-      .replace('http://github.com/', '');
-    
-    return loadedCodeData.get(repoKey) || sampleDiagrams;
+
+    // Normalize the repo URL to match our key format (same as in loading logic)
+    const normalizedRepoUrl = repo.metadata.repoUrl
+      .replace("https://github.com/", "")
+      .replace("http://github.com/", "")
+      .toLowerCase();
+
+    console.log(`Repository URL from metadata: ${repo.metadata.repoUrl}`);
+    console.log(`Looking for code data with normalized URL: ${normalizedRepoUrl}`);
+    console.log("Available code data keys:", Array.from(loadedCodeData.keys()));
+    console.log("LoadedCodeData size:", loadedCodeData.size);
+
+    const matchedData = loadedCodeData.get(normalizedRepoUrl);
+    if (matchedData) {
+      console.log(`Found ${matchedData.length} diagram files for repository`);
+      return matchedData;
+    }
+
+    // Fallback: try to find partial matches
+    for (const [key, data] of loadedCodeData.entries()) {
+      console.log(
+        `Checking partial match: "${key}" contains "${normalizedRepoUrl.split("/")[1]}" or "${normalizedRepoUrl}" contains "${key}"`
+      );
+      if (key.includes(normalizedRepoUrl.split("/")[1]) || normalizedRepoUrl.includes(key)) {
+        console.log(`Found partial match with key: ${key}`);
+        return data;
+      }
+    }
+
+    console.log("No matching code data found, using sample diagrams");
+    return sampleDiagrams;
   };
 
   const renderOutput = () => {
     if (!output) {
-      return (
-        <div className="text-[#491b72] italic font-mono">
-          Output will appear here...
-        </div>
-      );
+      return <div className="text-[#491b72] italic font-mono">Output will appear here...</div>;
     }
 
     const { isJson, formatted } = UIUtils.formatOutput(output);
-    
+
     return isJson ? (
       <pre className="whitespace-pre-wrap text-sm font-mono bg-[#ececec] p-4 rounded-3xl overflow-x-auto text-[#491b72] shadow-[4px_4px_25px_#00000040]">
         {formatted}
@@ -455,7 +464,10 @@ export default function App() {
       return (
         <div className="text-center py-12">
           <h2 className="text-4xl font-bold text-[#491b72] mb-4">
-            Welcome to <span className="font-extrabold bg-[linear-gradient(103deg,rgba(120,127,227,1)_0%,rgba(128,66,182,1)_100%)] bg-clip-text text-transparent">GitGood</span>
+            Welcome to{" "}
+            <span className="font-extrabold bg-[linear-gradient(103deg,rgba(120,127,227,1)_0%,rgba(128,66,182,1)_100%)] bg-clip-text text-transparent">
+              GitGood
+            </span>
           </h2>
           <h3 className="text-2xl font-bold text-[#491b72] mb-10">AI that reads code so you don't have to.</h3>
           <p className="text-[#491b72] font-mono">
@@ -474,7 +486,7 @@ export default function App() {
           <p className="text-[#491b72] font-mono">
             Enter a repository URL below to analyze and generate documentation chapters.
           </p>
-          
+
           <div className="space-y-4">
             <div>
               <label htmlFor="link-input" className="block text-sm font-bold text-[#491b72] mb-2 font-mono">
@@ -503,9 +515,7 @@ export default function App() {
             {/* Output Section */}
             {output && (
               <div>
-                <label className="block text-sm font-bold text-[#491b72] mb-2 font-mono">
-                  Processing Output:
-                </label>
+                <label className="block text-sm font-bold text-[#491b72] mb-2 font-mono">Processing Output:</label>
                 <div className="w-full min-h-[100px] border-[3px] border-white rounded-3xl shadow-[2px_2px_15px_#00000020]">
                   {renderOutput()}
                 </div>
@@ -529,31 +539,33 @@ export default function App() {
           {repo.metadata?.relationshipSummary && (
             <div className="bg-white/60 p-6 rounded-3xl shadow-[2px_2px_15px_#00000020] border-[2px] border-white/40">
               <h2 className="text-xl font-bold text-[#491b72] mb-3">Project Summary</h2>
-              <div 
+              <div
                 className="text-[#491b72] font-mono leading-relaxed prose prose-sm max-w-none"
                 dangerouslySetInnerHTML={{ __html: parsedSummary }}
-                style={{
-                  '--tw-prose-body': '#491b72',
-                  '--tw-prose-headings': '#491b72',
-                  '--tw-prose-links': '#7f66b3',
-                  '--tw-prose-bold': '#491b72',
-                  '--tw-prose-italic': '#6b46c1',
-                } as React.CSSProperties}
+                style={
+                  {
+                    "--tw-prose-body": "#491b72",
+                    "--tw-prose-headings": "#491b72",
+                    "--tw-prose-links": "#7f66b3",
+                    "--tw-prose-bold": "#491b72",
+                    "--tw-prose-italic": "#6b46c1",
+                  } as React.CSSProperties
+                }
               />
             </div>
           )}
 
-                    {/* Project Architecture Mermaid diagram below Table of Contents */}
-                    {repo.metadata?.abstractionsList && repo.metadata?.relationships && (
+          {/* Project Architecture Mermaid diagram below Table of Contents */}
+          {repo.metadata?.abstractionsList && repo.metadata?.relationships && (
             <div className="bg-white/60 p-6 rounded-3xl shadow-[2px_2px_15px_#00000020] border-[2px] border-white/40">
               <h2 className="text-xl font-bold text-[#491b72] mb-3">Project Architecture</h2>
-              <div 
+              <div
                 className="mermaid-container"
-                dangerouslySetInnerHTML={{ 
+                dangerouslySetInnerHTML={{
                   __html: MermaidUtils.generateMermaidPlaceholder(
-                    repo.metadata.abstractionsList, 
+                    repo.metadata.abstractionsList,
                     repo.metadata.relationships
-                  )
+                  ),
                 }}
               />
             </div>
@@ -579,52 +591,51 @@ export default function App() {
               </div>
             ))}
           </div>
-
         </div>
       );
     }
 
-  // Show specific chapter
-  const chapter = RepositoryService.findChapterByPath(repo, currentView.chapter);
+    // Show specific chapter
+    const chapter = RepositoryService.findChapterByPath(repo, currentView.chapter);
     if (!chapter) return <div className="text-[#491b72] font-mono">Chapter not found</div>;
 
     return (
       <div className="space-y-6">
         <div className="flex items-center space-x-2 text-sm text-[#491b72] font-mono">
-          <button 
-            onClick={() => handleNavigation(repo.id)}
-            className="hover:text-purple-800 transition-colors"
-          >
+          <button onClick={() => handleNavigation(repo.id)} className="hover:text-purple-800 transition-colors">
             {repo.title}
           </button>
           <span>/</span>
           <span className="font-bold">{chapter.title}</span>
         </div>
-        
+
         <h1 className="text-3xl font-bold text-[#491b72]">{chapter.title}</h1>
-        
+
         {/* Render HTML content from markdown */}
         {(() => {
           // Normalize content: if content is a string, attempt to parse via RepositoryService
-          const normalized = typeof chapter.content === 'string'
-            ? RepositoryService.getChapterContent(repositories, repo.id, chapter.id)
-            : (chapter.content as any);
+          const normalized =
+            typeof chapter.content === "string"
+              ? RepositoryService.getChapterContent(repositories, repo.id, chapter.id)
+              : (chapter.content as any);
 
           if (normalized && (normalized as any).htmlContent) {
             return (
-              <div 
+              <div
                 className="prose prose-lg max-w-none text-[#491b72] font-mono"
                 dangerouslySetInnerHTML={{ __html: (normalized as any).htmlContent }}
-                style={{
-              // Custom styles for the rendered markdown
-              '--tw-prose-body': '#491b72',
-              '--tw-prose-headings': '#491b72',
-              '--tw-prose-links': '#7f66b3',
-              '--tw-prose-code': '#491b72',
-              '--tw-prose-pre-bg': '#ececec',
-            } as React.CSSProperties}
-          />
-          );
+                style={
+                  {
+                    // Custom styles for the rendered markdown
+                    "--tw-prose-body": "#491b72",
+                    "--tw-prose-headings": "#491b72",
+                    "--tw-prose-links": "#7f66b3",
+                    "--tw-prose-code": "#491b72",
+                    "--tw-prose-pre-bg": "#ececec",
+                  } as React.CSSProperties
+                }
+              />
+            );
           }
 
           const summary = RepositoryService.getChapterContent(repositories, repo.id, chapter.id);
@@ -632,7 +643,7 @@ export default function App() {
             <div className="bg-[#ececec] rounded-2xl shadow-[2px_2px_15px_#00000040] p-6 border-[3px] border-white">
               <h2 className="text-xl font-bold mb-4 text-[#491b72]">Content for {chapter.title}</h2>
               <p className="text-[#491b72] mb-4 font-mono">
-                {summary.description || 'Loading chapter content...'}
+                {summary.description || "Loading chapter content..."}
               </p>
             </div>
           );
@@ -649,60 +660,56 @@ export default function App() {
       <div className="fixed inset-0 -z-10 h-full w-full bg-[radial-gradient(white_2px,transparent_2px)] [background-size:32px_32px]"></div>
       {/* Main app content above overlays */}
       <div className="flex h-screen w-full overflow-hidden">
-      
-      {/* Sidebar */}
-      <Sidebar
-        repositories={repositories}
-        currentRepo={currentRepo}
-        currentChapter={currentView?.chapter}
-        isOpen={sidebarOpen}
-        onToggle={() => setSidebarOpen(!sidebarOpen)}
-        onNavigate={handleNavigation}
-        isCollapsed={sidebarCollapsed}
-        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-      />
-      
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Header with hamburger menu */}
-        <div className="bg-[white] px-4 py-3 flex items-center justify-between lg:justify-center flex-shrink-0">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-2 rounded-md hover:bg-white/20 transition-colors"
-          >
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-          
-          <h1 
-            className="text-2xl font-bold text-[#4A1C72] cursor-pointer"
-            onClick={handleBackToHome}
-          >
-            {UI_CONSTANTS.appTitle}
-          </h1>
-          
-          <div className="w-10 lg:hidden"></div>
-        </div>
+        {/* Sidebar */}
+        <Sidebar
+          repositories={repositories}
+          currentRepo={currentRepo}
+          currentChapter={currentView?.chapter}
+          isOpen={sidebarOpen}
+          onToggle={() => setSidebarOpen(!sidebarOpen)}
+          onNavigate={handleNavigation}
+          isCollapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        />
 
-        {/* Content Area */}
-        <div className="flex-1 overflow-auto min-w-0">
-          <div className="p-6 max-w-4xl mx-auto space-y-6 w-full">
-            {/* Main content in white container */}
-            <div className="bg-[#ececec] rounded-2xl shadow-[4px_4px_25px_#00000040] border-[3px] border-white p-6 mt-5">
-              {renderCurrentView()}
-            </div>
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          {/* Header with hamburger menu */}
+          <div className="bg-[white] px-4 py-3 flex items-center justify-between lg:justify-center flex-shrink-0">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden p-2 rounded-md hover:bg-white/20 transition-colors"
+            >
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+
+            <h1 className="text-2xl font-bold text-[#4A1C72] cursor-pointer" onClick={handleBackToHome}>
+              {UI_CONSTANTS.appTitle}
+            </h1>
+
+            <div className="w-10 lg:hidden"></div>
           </div>
 
-          {/* Diagram positioned under the middle column content, taking full width */}
-          {currentView && currentView.repo !== PROCESS_REPOSITORY_ID && !currentView.chapter && (
-            <div className="w-full overflow-hidden">
-              <MultiDiagram inputData={getCurrentRepoDiagramData()} />
+          {/* Content Area */}
+          <div className="flex-1 overflow-auto min-w-0">
+            <div className="p-6 max-w-4xl mx-auto space-y-6 w-full">
+              {/* Main content in white container */}
+              <div className="bg-[#ececec] rounded-2xl shadow-[4px_4px_25px_#00000040] border-[3px] border-white p-6 mt-5">
+                {renderCurrentView()}
+              </div>
             </div>
-          )}
+
+            {/* Diagram positioned under the middle column content, taking full width */}
+            {currentView && currentView.repo !== PROCESS_REPOSITORY_ID && !currentView.chapter && (
+              <div className="w-full overflow-hidden">
+                <MultiDiagram inputData={getCurrentRepoDiagramData()} />
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
-  </div>
   );
 }

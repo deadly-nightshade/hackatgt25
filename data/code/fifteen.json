@@ -1,0 +1,98 @@
+{"repoUrl": "https://github.com/Kirilllive/Fifteen_puzzle_maker",
+    "aiAnalysis": [
+    {
+      "file": "README.md",
+      "summary": "This document provides an overview of the \"Fifteen Sliding Puzzle maker for HTML.\" It describes a simple implementation of the classic 15 puzzle game using HTML DOM elements, without relying on Canvas or third-party libraries. The README highlights features like natural mixing of puzzle slots, multi-block moves, GamePad and keyboard controls, and its flexible, integratable engine code. It also includes instructions on how to use the puzzle by creating a `div` element with ID \"fifteen\" and providing a `setup` object with configuration parameters, along with links to an online editor and demo.",
+      "imports": [],
+      "functions": [],
+      "classes": []
+    },
+    {
+      "file": "example.html",
+      "summary": "This HTML file serves as a basic example demonstrating how to embed and configure the \"Fifteen Sliding Puzzle\" game on a webpage. It defines minimal body styling to center the game and includes a `div` element with the ID \"fifteen\" where the puzzle will be rendered. Crucially, it provides a JavaScript `setup` configuration object for the puzzle, specifying parameters like puzzle difficulty, size, grid dimensions, image URL, and control options, before loading the main game engine script `fifteen_puzzle.js`.",
+      "imports": [
+        "fifteen_puzzle.js"
+      ],
+      "functions": [],
+      "classes": []
+    },
+    {
+      "file": "fifteen_puzzle.js",
+      "summary": "This JavaScript file implements the core logic for a \"Fifteen Sliding Puzzle\" game. It initializes game parameters from a globally accessible `setup.puzzle_fifteen` object, creates the puzzle slots as HTML `div` elements, shuffles them using a natural movement algorithm, and manages user interaction for moving slots. It also includes functionality for checking for a win condition, responsively resizing the puzzle for full-screen display, and handling input from both keyboard and GamePad devices.",
+      "imports": [],
+      "functions": [
+        {
+          "name": "ceation_slots",
+          "signature": "ceation_slots()",
+          "description": "Initializes the puzzle board. It calculates slot sizes, sets up the main puzzle container's styles, creates individual `div` elements for each puzzle slot, positions them, and applies styling based on the `setup` configuration. It also identifies the empty slot and then calls `stir_slots()` to shuffle the puzzle."
+        },
+        {
+          "name": "stir_slots",
+          "signature": "stir_slots()",
+          "description": "Shuffles the puzzle slots. It performs a specified number of random moves of the free slot, ensuring the puzzle remains solvable. After shuffling the internal `m` array representing the puzzle state, it updates the visual positions of the HTML slot elements accordingly."
+        },
+        {
+          "name": "move_slot",
+          "signature": "move_slot(s)",
+          "description": "Handles the movement of a puzzle slot. Given a slot number `s`, it determines if that slot can move to the free slot's position (either horizontally or vertically) and then animates the movement of that slot (or multiple slots in a line) into the free space. After the move, it calls `check_slots()` to see if the puzzle is solved."
+        },
+        {
+          "name": "check_slots",
+          "signature": "check_slots()",
+          "description": "Checks if the puzzle has been solved. It iterates through the `m` array to verify if all slots are in their correct numerical order. If solved, it triggers an `alert('win')` after a short delay based on the configured animation time."
+        },
+        {
+          "name": "fifteen_resize",
+          "signature": "fifteen_resize()",
+          "description": "Adjusts the scale of the puzzle container (`f`) to fit its parent element, maintaining the aspect ratio, which is useful for responsive or full-screen layouts. This function is typically called on window resize events if `p.fill` is true."
+        }
+      ],
+      "classes": []
+    },
+    {
+      "file": "index.html",
+      "summary": "This HTML file serves as an interactive \"Fifteen Sliding Puzzle\" editor and maker. It provides a user interface on the left side with controls to load images, adjust puzzle parameters such as difficulty, size, grid dimensions, move animation time, and block styling. It dynamically updates the puzzle preview displayed on the right. Key features include automatic grid adjustment and style adaptation based on image dimensions, drag-and-drop image upload, and the ability to generate and download a complete HTML file of the configured game.",
+      "imports": [
+        "fifteen_puzzle.js"
+      ],
+      "functions": [
+        {
+          "name": "loadFiles",
+          "signature": "loadFiles(e)",
+          "description": "Event handler for the image file input. It retrieves the selected file and then calls `adden_file()` to process it."
+        },
+        {
+          "name": "adden_file",
+          "signature": "adden_file()",
+          "description": "Handles the addition of an image file. It creates a URL for the selected image, sets it as the `art.url` in the `setup` object, and then loads the image. Once loaded, it triggers `auto_grid()`, `auto_style()`, and `fifteen_update()` to adjust puzzle parameters and refresh the display."
+        },
+        {
+          "name": "auto_grid",
+          "signature": "auto_grid()",
+          "description": "Automatically calculates and suggests grid dimensions for the puzzle based on the loaded image's aspect ratio. It updates the `grid` values in the `setup` object and reflects these changes in the corresponding input fields (`grid_width`, `grid_height`, `width`, `height`)."
+        },
+        {
+          "name": "auto_style",
+          "signature": "auto_style()",
+          "description": "Automatically adjusts the `border-radius` and `font-size` within the puzzle's `style` configuration based on the calculated slot dimensions, aiming for a visually appealing aesthetic. It updates the `style` string in the `setup` object and the `slot_style` input field."
+        },
+        {
+          "name": "fifteen_update",
+          "signature": "fifteen_update()",
+          "description": "Clears the existing puzzle board and re-initializes it by calling `ceation_slots()`, effectively refreshing the puzzle display with the current `setup` parameters."
+        },
+        {
+          "name": "fifteen_build",
+          "signature": "fifteen_build()",
+          "description": "Generates an HTML file containing the configured puzzle game. It reads the selected image file (if any) as a Data URL, fetches the content of `fifteen_puzzle.js`, and then dynamically constructs an HTML document, embedding the `setup` configuration and the puzzle engine. Finally, it triggers a download of this generated HTML file."
+        },
+        {
+          "name": "drop.init",
+          "signature": "drop.init()",
+          "description": "Initializes drag-and-drop functionality for image files. It prevents default drag-and-drop behavior and adds a `drop` event listener to the window. When a file is dropped, it captures the file and calls `adden_file()` to process it."
+        }
+      ],
+      "classes": []
+    }
+  ]
+}

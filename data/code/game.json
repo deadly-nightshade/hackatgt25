@@ -1,0 +1,797 @@
+{"repoUrl": "https://github.com/tigarcia/tic-tac-toe-OOP",
+    "aiAnalysis": [
+    {
+    "file": "js/game.js",
+    "summary": "This file defines the Game class, which orchestrates a game, likely Tic-Tac-Toe. It initializes the game board and two players, manages player turns, and provides core game logic for making moves, determining the winner, and resetting the game state. The class interacts with Board, Player, and Square objects to manage game mechanics.",
+    "imports": [
+    "Board",
+    "Player",
+    "Square"
+    ],
+    "functions": [],
+    "classes": [
+    {
+    "name": "Game",
+    "description": "Represents the main game logic, managing players, board state, and turns.",
+    "functions": [
+    {
+    "name": "constructor",
+    "signature": "Game(playerX = 'X', playerO = 'O')",
+    "description": "Initializes a new game instance, setting up the board and two players with their respective marks and names."
+    },
+    {
+    "name": "makeMove",
+    "signature": "makeMove(row, column)",
+    "description": "Attempts to make a move at the specified row and column. If the square is empty, it updates the board, switches the current player, and returns the placed square state; otherwise, it returns undefined."
+    },
+    {
+    "name": "__changeTurn",
+    "signature": "__changeTurn()",
+    "description": "Switches the current player between playerX and playerO after a valid move."
+    },
+    {
+    "name": "winner",
+    "signature": "winner()",
+    "description": "Checks the current state of the game board and returns the outcome (e.g., X_WINS, O_WINS, TIE, or undefined if game is ongoing)."
+    },
+    {
+    "name": "reset",
+    "signature": "reset()",
+    "description": "Resets the game to its initial state, setting the current player back to playerX and clearing the game board."
+    }
+    ]
+    }
+    ]
+    },
+    {
+    "file": "js/main.js",
+    "summary": "This file handles the client-side UI logic for the game, interacting with the DOM. It initializes a new game instance upon page load, provides functions for updating the display (clearing the board, setting messages), and sets up event listeners for user interactions. Specifically, it listens for clicks on a 'New Game' button and individual squares on the game board to process moves and display game results.",
+    "imports": [
+    "Game",
+    "Square",
+    "Board",
+    "document"
+    ],
+    "functions": [
+    {
+    "name": "clearBoard",
+    "signature": "clearBoard()",
+    "description": "Clears the visual content of all squares on the game board and resets the message display area."
+    },
+    {
+    "name": "setMessage",
+    "signature": "setMessage(message)",
+    "description": "Displays a given message in the designated 'message' element on the HTML page."
+    }
+    ],
+    "classes": []
+    },
+    {
+    "file": "js/player.js",
+    "summary": "This file defines the Player class, which represents a participant in the game. Each player is initialized with a specific squareState (their mark, e.g., 'X' or 'O') and a name. This simple class primarily serves as a data structure to hold player-specific information.",
+    "imports": [],
+    "functions": [],
+    "classes": [
+    {
+    "name": "Player",
+    "description": "Represents a player in the game, storing their square state (mark) and name.",
+    "functions": [
+    {
+    "name": "constructor",
+    "signature": "Player(squareState, name)",
+    "description": "Initializes a new player instance with their assigned mark (e.g., Square.X_STATE) and a human-readable name."
+    }
+    ]
+    }
+    ]
+    },
+    {
+    "file": "js/square.js",
+    "summary": "This file defines the Square class, representing a single position on the game board, along with its possible states (empty, 'X', or 'O'). It includes static properties for these states and prototype methods to check the current state of a square. Additionally, it provides a static utility method to convert numeric state values into their corresponding string representations for display purposes.",
+    "imports": [],
+    "functions": [],
+    "classes": [
+    {
+    "name": "Square",
+    "description": "Represents a single square on the game board, managing its state (empty, X, or O).",
+    "functions": [
+    {
+    "name": "constructor",
+    "signature": "Square()",
+    "description": "Initializes a new square instance with its state set to EMPTY_STATE."
+    },
+    {
+    "name": "x",
+    "signature": "x()",
+    "description": "Checks if the square's current state is X_STATE."
+    },
+    {
+    "name": "o",
+    "signature": "o()",
+    "description": "Checks if the square's current state is O_STATE."
+    },
+    {
+    "name": "empty",
+    "signature": "empty()",
+    "description": "Checks if the square's current state is EMPTY_STATE."
+    },
+    {
+    "name": "stateToString",
+    "signature": "stateToString(state)",
+    "description": "A static method that converts a numeric square state into its corresponding string ('X', 'O', or '')."
+    }
+    ]
+    }
+    ]
+    },
+    {
+    "file": "js/vendor/bootstrap.js",
+    "summary": "This file contains a concatenated collection of Bootstrap v3.3.1's JavaScript plugins, providing various interactive UI components. It includes modules for transitions, alerts, buttons, carousels, collapses, dropdowns, modals, tooltips, popovers, scrollspy, tabs, and affixes. The code relies heavily on jQuery and performs a version check to ensure compatibility. Each plugin follows a consistent pattern of class definition, prototype methods for behavior, and integration into jQuery's plugin system with data-API support.",
+    "imports": [
+    "jQuery",
+    "document",
+    "window"
+    ],
+    "functions": [
+    {
+    "name": "transitionEnd",
+    "signature": "transitionEnd()",
+    "description": "Detects and returns the correct browser-prefixed CSS transition end event name."
+    },
+    {
+    "name": "Plugin",
+    "signature": "Plugin(option)",
+    "description": "The jQuery plugin wrapper for the Alert component. It initializes an Alert instance or calls a method on an existing one for selected elements."
+    },
+    {
+    "name": "Plugin",
+    "signature": "Plugin(option)",
+    "description": "The jQuery plugin wrapper for the Button component. It initializes a Button instance or calls a method (e.g., 'toggle', 'setState') on an existing one for selected elements."
+    },
+    {
+    "name": "Plugin",
+    "signature": "Plugin(option)",
+    "description": "The jQuery plugin wrapper for the Carousel component. It initializes a Carousel instance or triggers an action (e.g., 'next', 'prev', 'to') for selected carousel elements."
+    },
+    {
+    "name": "clickHandler",
+    "signature": "clickHandler(e)",
+    "description": "An event handler for carousel controls (data-slide, data-slide-to), preventing default behavior and calling the Carousel plugin."
+    },
+    {
+    "name": "Plugin",
+    "signature": "Plugin(option)",
+    "description": "The jQuery plugin wrapper for the Collapse component. It initializes a Collapse instance or calls a method (e.g., 'show', 'hide', 'toggle') on an existing one for selected collapsible elements."
+    },
+    {
+    "name": "getTargetFromTrigger",
+    "signature": "getTargetFromTrigger($trigger)",
+    "description": "Extracts the target element's selector from a collapse trigger's data-target or href attribute."
+    },
+    {
+    "name": "clearMenus",
+    "signature": "clearMenus(e)",
+    "description": "Hides all active dropdown menus and removes any associated backdrops. Can be triggered by a click outside the dropdown."
+    },
+    {
+    "name": "getParent",
+    "signature": "getParent($this)",
+    "description": "Determines the parent element of a dropdown toggle, checking data-target, href, or defaulting to the element's parent."
+    },
+    {
+    "name": "Plugin",
+    "signature": "Plugin(option)",
+    "description": "The jQuery plugin wrapper for the Dropdown component. It initializes a Dropdown instance or calls a method on an existing one for selected dropdown toggles."
+    },
+    {
+    "name": "Plugin",
+    "signature": "Plugin(option, _relatedTarget)",
+    "description": "The jQuery plugin wrapper for the Modal component. It initializes a Modal instance or calls a method (e.g., 'show', 'hide', 'toggle') on an existing one for selected modal elements."
+    },
+    {
+    "name": "Plugin",
+    "signature": "Plugin(option)",
+    "description": "The jQuery plugin wrapper for the Tooltip component. It initializes a Tooltip instance or calls a method on an existing one for selected elements."
+    },
+    {
+    "name": "Plugin",
+    "signature": "Plugin(option)",
+    "description": "The jQuery plugin wrapper for the Popover component. It initializes a Popover instance or calls a method on an existing one for selected elements."
+    },
+    {
+    "name": "Plugin",
+    "signature": "Plugin(option)",
+    "description": "The jQuery plugin wrapper for the ScrollSpy component. It initializes a ScrollSpy instance or calls a method (e.g., 'refresh') on an existing one for scroll-tracked elements."
+    },
+    {
+    "name": "Plugin",
+    "signature": "Plugin(option)",
+    "description": "The jQuery plugin wrapper for the Tab component. It initializes a Tab instance or calls a method (e.g., 'show') on an existing one for selected tab triggers."
+    },
+    {
+    "name": "clickHandler",
+    "signature": "clickHandler(e)",
+    "description": "An event handler for tab/pill triggers, preventing default behavior and calling the Tab plugin to show the associated content."
+    },
+    {
+    "name": "Plugin",
+    "signature": "Plugin(option)",
+    "description": "The jQuery plugin wrapper for the Affix component. It initializes an Affix instance or calls a method on an existing one for selected elements."
+    }
+    ],
+    "classes": [
+    {
+    "name": "Alert",
+    "description": "A Bootstrap component class for managing dismissible alert messages, including animation and event triggers.",
+    "functions": [
+    {
+    "name": "constructor",
+    "signature": "Alert(el)",
+    "description": "Initializes an Alert instance, attaching a click handler to the dismiss button."
+    },
+    {
+    "name": "close",
+    "signature": "close(e)",
+    "description": "Closes the alert element, optionally with a CSS transition, and triggers 'close.bs.alert' and 'closed.bs.alert' events."
+    }
+    ]
+    },
+    {
+    "name": "Button",
+    "description": "A Bootstrap component class for managing button states (e.g., loading) and toggle behaviors for checkboxes/radio buttons.",
+    "functions": [
+    {
+    "name": "constructor",
+    "signature": "Button(element, options)",
+    "description": "Initializes a Button instance with its associated DOM element and options, including loading text."
+    },
+    {
+    "name": "setState",
+    "signature": "setState(state)",
+    "description": "Sets the button's state (e.g., 'loadingText') by updating its text, classes, and disabled attribute."
+    },
+    {
+    "name": "toggle",
+    "signature": "toggle()",
+    "description": "Toggles the 'active' state of the button, specifically handling behavior for radio and checkbox button groups."
+    }
+    ]
+    },
+    {
+    "name": "Carousel",
+    "description": "A Bootstrap component class for creating responsive, slide-show-like carousels with navigation controls and auto-play functionality.",
+    "functions": [
+    {
+    "name": "constructor",
+    "signature": "Carousel(element, options)",
+    "description": "Initializes a Carousel instance, setting up its elements, options, and event listeners for keyboard navigation and pause-on-hover."
+    },
+    {
+    "name": "keydown",
+    "signature": "keydown(e)",
+    "description": "Handles keyboard events (left/right arrow keys) to navigate between carousel slides."
+    },
+    {
+    "name": "cycle",
+    "signature": "cycle(e)",
+    "description": "Starts or resumes the carousel's automatic cycling through slides, clearing any existing interval."
+    },
+    {
+    "name": "getItemIndex",
+    "signature": "getItemIndex(item)",
+    "description": "Returns the zero-based index of a given carousel item or the currently active item."
+    },
+    {
+    "name": "getItemForDirection",
+    "signature": "getItemForDirection(direction, active)",
+    "description": "Determines and returns the next carousel item element based on the current active item and desired direction ('prev' or 'next')."
+    },
+    {
+    "name": "to",
+    "signature": "to(pos)",
+    "description": "Transitions the carousel to a specific slide index (pos). If already sliding, it queues the transition."
+    },
+    {
+    "name": "pause",
+    "signature": "pause(e)",
+    "description": "Pauses the carousel's auto-cycling, optionally stopping any ongoing transitions."
+    },
+    {
+    "name": "next",
+    "signature": "next()",
+    "description": "Advances the carousel to the next slide if not currently sliding."
+    },
+    {
+    "name": "prev",
+    "signature": "prev()",
+    "description": "Moves the carousel to the previous slide if not currently sliding."
+    },
+    {
+    "name": "slide",
+    "signature": "slide(type, next)",
+    "description": "Performs the actual slide transition between two carousel items, applying classes and triggering events like 'slide.bs.carousel' and 'slid.bs.carousel'."
+    }
+    ]
+    },
+    {
+    "name": "Collapse",
+    "description": "A Bootstrap component class that provides toggling functionality for showing and hiding content sections, often used for accordions.",
+    "functions": [
+    {
+    "name": "constructor",
+    "signature": "Collapse(element, options)",
+    "description": "Initializes a Collapse instance, setting up the target element, options, and trigger. It also handles parent accordion logic if specified."
+    },
+    {
+    "name": "dimension",
+    "signature": "dimension()",
+    "description": "Determines whether the collapse animation should apply to 'width' or 'height' based on element class."
+    },
+    {
+    "name": "show",
+    "signature": "show()",
+    "description": "Reveals the collapsible content with a CSS transition, triggers 'show.bs.collapse' and 'shown.bs.collapse' events, and hides sibling collapsed elements if part of an accordion."
+    },
+    {
+    "name": "hide",
+    "signature": "hide()",
+    "description": "Hides the collapsible content with a CSS transition, triggers 'hide.bs.collapse' and 'hidden.bs.collapse' events."
+    },
+    {
+    "name": "toggle",
+    "signature": "toggle()",
+    "description": "Toggles the visibility of the collapsible content by calling either show() or hide()."
+    },
+    {
+    "name": "getParent",
+    "signature": "getParent()",
+    "description": "Identifies the parent accordion element and processes its associated collapse triggers to manage ARIA attributes."
+    },
+    {
+    "name": "addAriaAndCollapsedClass",
+    "signature": "addAriaAndCollapsedClass($element, $trigger)",
+    "description": "Updates the aria-expanded attribute and the 'collapsed' class on both the collapsible element and its trigger."
+    }
+    ]
+    },
+    {
+    "name": "Dropdown",
+    "description": "A Bootstrap component class for creating interactive dropdown menus, handling their visibility, keyboard navigation, and click-outside-to-close behavior.",
+    "functions": [
+    {
+    "name": "constructor",
+    "signature": "Dropdown(element)",
+    "description": "Initializes a Dropdown instance, attaching a click handler to the toggle element."
+    },
+    {
+    "name": "toggle",
+    "signature": "toggle(e)",
+    "description": "Toggles the visibility of the dropdown menu. If opening, it adds a backdrop for mobile devices and triggers 'show.bs.dropdown'/'shown.bs.dropdown' events."
+    },
+    {
+    "name": "keydown",
+    "signature": "keydown(e)",
+    "description": "Handles keyboard navigation (up/down arrows, Escape) within an open dropdown menu to move focus between items."
+    }
+    ]
+    },
+    {
+    "name": "Modal",
+    "description": "A Bootstrap component class for creating modal dialogs, providing functionality for showing, hiding, backdrop management, keyboard interaction, and scrollbar handling.",
+    "functions": [
+    {
+    "name": "constructor",
+    "signature": "Modal(element, options)",
+    "description": "Initializes a Modal instance, setting up its elements, options, and potentially loading remote content into the modal body."
+    },
+    {
+    "name": "toggle",
+    "signature": "toggle(_relatedTarget)",
+    "description": "Toggles the visibility of the modal, calling show() if hidden or hide() if visible."
+    },
+    {
+    "name": "show",
+    "signature": "show(_relatedTarget)",
+    "description": "Displays the modal dialog, creates a backdrop, adjusts body scrollbar, enforces focus, and triggers 'show.bs.modal'/'shown.bs.modal' events."
+    },
+    {
+    "name": "hide",
+    "signature": "hide(e)",
+    "description": "Hides the modal dialog, removes focus enforcement, and triggers 'hide.bs.modal'/'hidden.bs.modal' events."
+    },
+    {
+    "name": "enforceFocus",
+    "signature": "enforceFocus()",
+    "description": "Ensures that focus remains within the modal dialog when it is open, preventing tabbing outside."
+    },
+    {
+    "name": "escape",
+    "signature": "escape()",
+    "description": "Sets up or removes an event listener for the Escape key to close the modal."
+    },
+    {
+    "name": "resize",
+    "signature": "resize()",
+    "description": "Sets up or removes a window resize event listener to handle modal adjustments dynamically."
+    },
+    {
+    "name": "hideModal",
+    "signature": "hideModal()",
+    "description": "Finalizes the modal hiding process by concealing the element, removing the backdrop, resetting body adjustments, and triggering 'hidden.bs.modal'."
+    },
+    {
+    "name": "removeBackdrop",
+    "signature": "removeBackdrop()",
+    "description": "Removes the modal backdrop element from the DOM."
+    },
+    {
+    "name": "backdrop",
+    "signature": "backdrop(callback)",
+    "description": "Manages the modal backdrop, either creating and showing it or hiding and removing it, with optional transitions and a callback."
+    },
+    {
+    "name": "handleUpdate",
+    "signature": "handleUpdate()",
+    "description": "Adjusts the backdrop and dialog position in response to window resizing or other layout changes."
+    },
+    {
+    "name": "adjustBackdrop",
+    "signature": "adjustBackdrop()",
+    "description": "Adjusts the height of the modal backdrop to match the modal's scroll height."
+    },
+    {
+    "name": "adjustDialog",
+    "signature": "adjustDialog()",
+    "description": "Adjusts the padding of the modal dialog to account for body scrollbars, preventing content shifting."
+    },
+    {
+    "name": "resetAdjustments",
+    "signature": "resetAdjustments()",
+    "description": "Resets any padding adjustments made to the modal dialog."
+    },
+    {
+    "name": "checkScrollbar",
+    "signature": "checkScrollbar()",
+    "description": "Determines if the document body has a scrollbar and measures its width."
+    },
+    {
+    "name": "setScrollbar",
+    "signature": "setScrollbar()",
+    "description": "Adds padding to the document body to compensate for the scrollbar when a modal is open."
+    },
+    {
+    "name": "resetScrollbar",
+    "signature": "resetScrollbar()",
+    "description": "Removes any padding added to the document body for scrollbar compensation."
+    },
+    {
+    "name": "measureScrollbar",
+    "signature": "measureScrollbar()",
+    "description": "Measures the width of the system scrollbar by creating and inspecting a temporary element."
+    }
+    ]
+    },
+    {
+    "name": "Tooltip",
+    "description": "A Bootstrap component class for creating customizable tooltips, providing small popups with supplementary information on hover or focus.",
+    "functions": [
+    {
+    "name": "constructor",
+    "signature": "Tooltip(element, options)",
+    "description": "Initializes a Tooltip instance, preparing its type, target element, and options, then attaching event listeners."
+    },
+    {
+    "name": "init",
+    "signature": "init(type, element, options)",
+    "description": "Sets up the tooltip's properties and attaches event listeners (click, mouseenter, mouseleave, focusin, focusout) based on the specified trigger."
+    },
+    {
+    "name": "getDefaults",
+    "signature": "getDefaults()",
+    "description": "Returns the default configuration options for the tooltip."
+    },
+    {
+    "name": "getOptions",
+    "signature": "getOptions(options)",
+    "description": "Merges default options with data attributes and user-provided options to create the final set of tooltip options."
+    },
+    {
+    "name": "getDelegateOptions",
+    "signature": "getDelegateOptions()",
+    "description": "Prepares options suitable for delegated event handling, stripping the selector."
+    },
+    {
+    "name": "enter",
+    "signature": "enter(obj)",
+    "description": "Handles mouseenter/focusin events, potentially showing the tooltip after a delay if hoverState is 'in'."
+    },
+    {
+    "name": "leave",
+    "signature": "leave(obj)",
+    "description": "Handles mouseleave/focusout events, potentially hiding the tooltip after a delay if hoverState is 'out'."
+    },
+    {
+    "name": "show",
+    "signature": "show()",
+    "description": "Displays the tooltip, calculates its position and placement, applies content, and triggers 'show.bs.tooltip'/'shown.bs.tooltip' events."
+    },
+    {
+    "name": "applyPlacement",
+    "signature": "applyPlacement(offset, placement)",
+    "description": "Applies the calculated offset and placement to the tooltip element, including adjustments for arrow positioning and viewport boundaries."
+    },
+    {
+    "name": "replaceArrow",
+    "signature": "replaceArrow(delta, dimension, isHorizontal)",
+    "description": "Adjusts the position of the tooltip's arrow based on calculated deltas and tooltip dimensions."
+    },
+    {
+    "name": "setContent",
+    "signature": "setContent()",
+    "description": "Populates the tooltip's inner content (.tooltip-inner) with the title, supporting HTML or plain text."
+    },
+    {
+    "name": "hide",
+    "signature": "hide(callback)",
+    "description": "Hides the tooltip, optionally with a transition, removes it from the DOM, and triggers 'hide.bs.tooltip'/'hidden.bs.tooltip' events."
+    },
+    {
+    "name": "fixTitle",
+    "signature": "fixTitle()",
+    "description": "Moves the element's title attribute to data-original-title to prevent native browser tooltips."
+    },
+    {
+    "name": "hasContent",
+    "signature": "hasContent()",
+    "description": "Checks if the tooltip has any title content to display."
+    },
+    {
+    "name": "getPosition",
+    "signature": "getPosition($element)",
+    "description": "Calculates the position, dimensions, and scroll offset of the target element, or the window/body if no element is provided."
+    },
+    {
+    "name": "getCalculatedOffset",
+    "signature": "getCalculatedOffset(placement, pos, actualWidth, actualHeight)",
+    "description": "Determines the top and left CSS offsets for the tooltip based on its desired placement, the target element's pos, and the tooltip's actualWidth/actualHeight."
+    },
+    {
+    "name": "getViewportAdjustedDelta",
+    "signature": "getViewportAdjustedDelta(placement, pos, actualWidth, actualHeight)",
+    "description": "Calculates adjustments needed to keep the tooltip within the defined viewport boundaries if it overflows."
+    },
+    {
+    "name": "getTitle",
+    "signature": "getTitle()",
+    "description": "Retrieves the tooltip's title content from data-original-title or the options."
+    },
+    {
+    "name": "getUID",
+    "signature": "getUID(prefix)",
+    "description": "Generates a unique ID string for the tooltip element to be used with aria-describedby."
+    },
+    {
+    "name": "tip",
+    "signature": "tip()",
+    "description": "Returns the jQuery object representing the tooltip's DOM element, creating it from the template if it doesn't exist."
+    },
+    {
+    "name": "arrow",
+    "signature": "arrow()",
+    "description": "Returns the jQuery object representing the tooltip's arrow element within the tip, creating it if it doesn't exist."
+    },
+    {
+    "name": "enable",
+    "signature": "enable()",
+    "description": "Enables the tooltip's functionality, allowing it to be shown."
+    },
+    {
+    "name": "disable",
+    "signature": "disable()",
+    "description": "Disables the tooltip's functionality, preventing it from being shown."
+    },
+    {
+    "name": "toggleEnabled",
+    "signature": "toggleEnabled()",
+    "description": "Toggles the enabled state of the tooltip."
+    },
+    {
+    "name": "toggle",
+    "signature": "toggle(e)",
+    "description": "Toggles the visibility of the tooltip, showing it if hidden or hiding it if visible."
+    },
+    {
+    "name": "destroy",
+    "signature": "destroy()",
+    "description": "Hides the tooltip, removes its event listeners, and cleans up its data from the element."
+    }
+    ]
+    },
+    {
+    "name": "Popover",
+    "description": "A Bootstrap component class that extends Tooltip to provide richer content popovers with both a title and a content body.",
+    "functions": [
+    {
+    "name": "constructor",
+    "signature": "Popover(element, options)",
+    "description": "Initializes a Popover instance, delegating to the Tooltip constructor for base setup."
+    },
+    {
+    "name": "getDefaults",
+    "signature": "getDefaults()",
+    "description": "Returns the default options for the popover, extending those from the Tooltip constructor."
+    },
+    {
+    "name": "setContent",
+    "signature": "setContent()",
+    "description": "Populates the popover's title (.popover-title) and content (.popover-content) areas, supporting HTML or plain text."
+    },
+    {
+    "name": "hasContent",
+    "signature": "hasContent()",
+    "description": "Checks if the popover has any title or content to display."
+    },
+    {
+    "name": "getContent",
+    "signature": "getContent()",
+    "description": "Retrieves the popover's content from data-content or the options."
+    },
+    {
+    "name": "arrow",
+    "signature": "arrow()",
+    "description": "Returns the jQuery object for the popover's arrow element."
+    },
+    {
+    "name": "tip",
+    "signature": "tip()",
+    "description": "Returns the jQuery object representing the popover's DOM element, creating it from the template if it doesn't exist."
+    }
+    ]
+    },
+    {
+    "name": "ScrollSpy",
+    "description": "A Bootstrap component class that automatically updates navigation or list group components based on the scroll position to indicate the currently active section.",
+    "functions": [
+    {
+    "name": "constructor",
+    "signature": "ScrollSpy(element, options)",
+    "description": "Initializes a ScrollSpy instance, setting up the scrollable element, options, and event listeners for scroll and refresh."
+    },
+    {
+    "name": "getScrollHeight",
+    "signature": "getScrollHeight()",
+    "description": "Returns the total scrollable height of the scroll element or the document body."
+    },
+    {
+    "name": "refresh",
+    "signature": "refresh()",
+    "description": "Recalculates the offsets and corresponding targets of all spyable elements, updating internal arrays."
+    },
+    {
+    "name": "process",
+    "signature": "process()",
+    "description": "Compares the current scroll position against element offsets to determine which navigation target should be active and calls activate() accordingly."
+    },
+    {
+    "name": "activate",
+    "signature": "activate(target)",
+    "description": "Marks a specific navigation target as 'active', applying the 'active' class to its parent list item and triggering 'activate.bs.scrollspy' event."
+    },
+    {
+    "name": "clear",
+    "signature": "clear()",
+    "description": "Removes the 'active' class from all currently active navigation items."
+    }
+    ]
+    },
+    {
+    "name": "Tab",
+    "description": "A Bootstrap component class for implementing tabbed interfaces, allowing users to switch between different content panes.",
+    "functions": [
+    {
+    "name": "constructor",
+    "signature": "Tab(element)",
+    "description": "Initializes a Tab instance, storing the jQuery object of the tab's trigger element."
+    },
+    {
+    "name": "show",
+    "signature": "show()",
+    "description": "Displays the tab's associated content pane, hides the previously active one, and triggers 'hide.bs.tab'/'show.bs.tab' and 'hidden.bs.tab'/'shown.bs.tab' events."
+    },
+    {
+    "name": "activate",
+    "signature": "activate(element, container, callback)",
+    "description": "Activates a specified tab element and its content pane within a given container, handling CSS transitions and callbacks."
+    }
+    ]
+    },
+    {
+    "name": "Affix",
+    "description": "A Bootstrap component class that pins an element to a specific position on the page as the user scrolls, changing its position CSS property.",
+    "functions": [
+    {
+    "name": "constructor",
+    "signature": "Affix(element, options)",
+    "description": "Initializes an Affix instance, setting up the element to be affixed, its target scroll container, and options for offsets, then binds scroll and click event listeners."
+    },
+    {
+    "name": "getState",
+    "signature": "getState(scrollHeight, height, offsetTop, offsetBottom)",
+    "description": "Determines the current affix state ('top', 'bottom', or false) based on scroll position, element height, and defined offsets."
+    },
+    {
+    "name": "getPinnedOffset",
+    "signature": "getPinnedOffset()",
+    "description": "Calculates the top offset at which the element should be 'pinned' when in the 'bottom' affix state."
+    },
+    {
+    "name": "checkPositionWithEventLoop",
+    "signature": "checkPositionWithEventLoop()",
+    "description": "Schedules a call to checkPosition in the next event loop to ensure proper state calculation after DOM updates."
+    },
+    {
+    "name": "checkPosition",
+    "signature": "checkPosition()",
+    "description": "Main logic for Affix: checks the current scroll position and updates the element's affix state (affix-top, affix, affix-bottom), applying appropriate classes and CSS styles."
+    }
+    ]
+    }
+    ]
+    },
+    {
+    "file": "readme.md",
+    "summary": "This document outlines an Object-Oriented Programming (OOP) design for a Tic Tac Toe game. It details the initial brainstorming of components, their organization, and then proposes a set of JavaScript classes for implementation. The README describes the core responsibilities and potential states for each class: Game, Board, Player, and Square, alongside a mention of a main.js file for game instantiation.",
+    "imports": [],
+    "functions": [],
+    "classes": [
+    {
+    "name": "Game",
+    "description": "The Game class creates an instance of a board and two players. It keeps track of whose turn it is, is responsible for making and validating moves on the board, and identifies when a player has won the game.",
+    "functions": [
+    {
+    "name": "makeMove",
+    "signature": "makeMove(player, position)",
+    "description": "Responsible for making a move on the board at a specified position."
+    },
+    {
+    "name": "isValidMove",
+    "signature": "isValidMove(position)",
+    "description": "Ensures that a proposed move is valid according to game rules."
+    },
+    {
+    "name": "checkForWin",
+    "signature": "checkForWin()",
+    "description": "Identifies if a player has won the game based on the current board state."
+    }
+    ]
+    },
+    {
+    "name": "Board",
+    "description": "The Board class creates a 2-dimensional array of Square objects. It functions as a state machine, tracking game states such as PLAYING, X_WINS, O_WINS, and TIE. The board can also determine if a specific square is empty and check for win or tie conditions.",
+    "functions": [
+    {
+    "name": "isSquareEmpty",
+    "signature": "isSquareEmpty(row, col)",
+    "description": "Checks if the square at the given coordinates is empty."
+    },
+    {
+    "name": "checkWinOrTie",
+    "signature": "checkWinOrTie()",
+    "description": "Determines if the game has reached a win state for either player or a tie."
+    }
+    ]
+    },
+    {
+    "name": "Player",
+    "description": "The Player class keeps track of the player's type (X or O) and their name, if desired for display purposes.",
+    "functions": []
+    },
+    {
+    "name": "Square",
+    "description": "The Square class represents an individual square on the Tic Tac Toe board. It can exist in one of three states: empty, occupied by 'X', or occupied by 'O'.",
+    "functions": []
+    }
+    ]
+    }
+    ]
+    }
