@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "ES2019",
+    "lib": ["ES2019"],
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "downlevelIteration": true
+  },
+  "include": ["api/**/*", "workflows/**/*", "agents/**/*", "tools/**/*", "index.ts", "memory.ts"]
+}

@@ -129,7 +129,7 @@ Provide 3-8 key abstractions that represent the most important concepts in this 
 });
 
 // Enhanced helper function to parse abstraction names from JSON response
-function parseAbstractionsFromJSONResponse(responseText: string, filesData: Array<[string, string]>): {
+function parseAbstractionsFromJSONResponse(responseText: string, filesData: any[]): {
     abstractionsList: string[];
     parsedAbstractions: Array<{name: string; description: string; files: number[]}>;
 } {
@@ -229,9 +229,9 @@ function extractAbstractionsFallback(text: string): string[] {
     }
     
     // Filter and deduplicate
-    const filteredNames = [...new Set(matches)]
-        .filter(name => 
-            name.length > 2 && 
+    const filteredNames = Array.from(new Set(matches))
+        .filter(name =>
+            name.length > 2 &&
             !['JSON', 'API', 'HTTP', 'URL', 'ID', 'UUID'].includes(name) // Remove common abbreviations
         )
         .slice(0, 8); // Limit to first 8
