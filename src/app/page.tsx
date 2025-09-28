@@ -195,7 +195,7 @@ export default function App() {
         
         <h1 className="text-3xl font-bold text-[#491b72]">{chapter.title}</h1>
         
-        <div className="bg-[#ececec] rounded-3xl shadow-[4px_4px_25px_#00000040] p-6 border-[3px] border-white">
+        <div className="bg-[#ececec] rounded-2xl shadow-[2px_2px_15px_#00000040] p-6 border-[3px] border-white">
           <h2 className="text-xl font-bold mb-4 text-[#491b72]">Content for {chapter.title}</h2>
           <p className="text-[#491b72] mb-4 font-mono">
             This is the content for {chapter.title} in the {repo.title} repository.
@@ -221,9 +221,13 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen bg-[linear-gradient(100deg,rgba(216,213,255,1)_9%,rgba(225,186,213,1)_100%)]">
-      {/* Background pattern overlay with white dots */}
+    <div className="relative h-screen">
+      {/* Gradient background at lowest z-index */}
+      <div className="fixed inset-0 -z-20 h-full w-full bg-[linear-gradient(100deg,rgba(216,213,255,1)_9%,rgba(225,186,213,1)_100%)]"></div>
+      {/* White dots overlay above gradient, below all content */}
       <div className="fixed inset-0 -z-10 h-full w-full bg-[radial-gradient(white_2px,transparent_2px)] [background-size:32px_32px]"></div>
+      {/* Main app content above overlays */}
+      <div className="flex h-screen relative z-0">
       
       {/* Sidebar */}
       <Sidebar
@@ -240,7 +244,7 @@ export default function App() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col lg:ml-0">
         {/* Header with hamburger menu */}
-        <div className="bg-[linear-gradient(103deg,rgba(120,127,227,1)_0%,rgba(128,66,182,1)_100%)] shadow-[4px_4px_25px_#00000040] border-b-[3px] border-white px-4 py-3 flex items-center justify-between lg:justify-center">
+        <div className="bg-[white] px-4 py-3 flex items-center justify-between lg:justify-center">
           <button
             onClick={() => setSidebarOpen(true)}
             className="lg:hidden p-2 rounded-md hover:bg-white/20 transition-colors"
@@ -250,7 +254,7 @@ export default function App() {
             </svg>
           </button>
           
-          <h1 className="text-xl font-bold text-white">
+          <h1 className="text-xl font-bold text-[#4A1C72]">
             {UI_CONSTANTS.appTitle}
           </h1>
           
@@ -261,14 +265,14 @@ export default function App() {
         <div className="flex-1 overflow-auto">
           <div className="p-6 max-w-4xl mx-auto space-y-6">
             {/* Main content in white container */}
-            <div className="bg-[#ececec] rounded-3xl shadow-[4px_4px_25px_#00000040] border-[3px] border-white p-6">
+            <div className="bg-[#ececec] rounded-2xl shadow-[4px_4px_25px_#00000040] border-[3px] border-white p-6 mt-5">
               {renderCurrentView()}
             </div>
 
             {/* Diagram outside the white container - directly on purple background */}
             {currentView && currentView.repo !== PROCESS_REPOSITORY_ID && sampleDiagrams.length > 0 && (
               <div>
-                <h2 className="text-xl font-bold mb-4 text-[#491b72]">Code Diagram</h2>
+                <h2 className="text-xl font-bold text-[#491b72] bg-[#ececec] rounded-2xl shadow-[4px_4px_25px_#00000040] border-[3px] border-white p-6 mt-5">Code Diagram</h2>
                 {sampleDiagrams.map((d, i) => (
                   <Diagram key={i} inputData={d} />
                 ))}
@@ -278,5 +282,6 @@ export default function App() {
         </div>
       </div>
     </div>
+  </div>
   );
 }

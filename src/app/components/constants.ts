@@ -45,13 +45,29 @@ export const sampleDiagrams: DiagramData[] = [
       },
     ],
     classes: [
-      { name: "FetchRepo(Node)", popupFunctionName: "prep(self, shared)", nestedExplanation: "explanation for asdfj" } as any,
-      { name: "IdentifyAbstractions(Node)", popupFunctionName: "prep(self, shared)", description: "Identifies abstractions." } as any,
-      { name: "AnalyzeRelationships(Node)", popupFunctionName: "exec(self, prep_res)", nestedClass: "prep(self, shared)", nestedExplanation: "explanation for yippee" } as any,
+      { name: "FetchRepo(Node)", popupFunctionNames: ["prep(self, shared)", "run(self)"] , nestedExplanation: "explanation for asdfj" } as any,
+      { name: "IdentifyAbstractions(Node)", popupFunctionNames: ["prep(self, shared)"] , description: "Identifies abstractions." } as any,
+      { name: "AnalyzeRelationships(Node)", popupFunctionNames: ["exec(self, prep_res)", "analyze(self)"] , nestedClass: "prep(self, shared)", nestedExplanation: "explanation for yippee" } as any,
     ],
-    constants: ["PI = 3.14", "MAX_USERS = 100"],
-    notes: ["This file handles repo fetching", "Abstraction detection is experimental"],
   },
+  {
+    title: "GitGood",
+    file: "main.py",
+    summary: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+    imports: ["os", "re", "yaml"],
+    functions: [
+      {
+        name: "get_content_for_indices",
+        signature: "get_content_for_indices(files_data, indices)",
+        description: "Gets code snippets based on indices.",
+      },
+    ],
+    classes: [
+      { name: "aaasdfjsf(Node)", popupFunctionNames: ["prep(self, shared)", "run(self)"] , nestedExplanation: "explanation for asdfj" } as any,
+      { name: "asdfasdf(Node)", popupFunctionNames: ["prep(self, shared)"] , description: "Identifies abstractions." } as any,
+      { name: "lskdfjlkjsf(Node)", popupFunctionNames: ["exec(self, prep_res)", "analyze(self)"] , nestedClass: "prep(self, shared)", nestedExplanation: "explanation for yippee" } as any,
+    ],
+  }
 ];
 
 // API Configuration
@@ -63,7 +79,7 @@ export const API_CONFIG = {
 
 // UI Constants
 export const UI_CONSTANTS = {
-  appTitle: "Git Good",
+  appTitle: "GitGood",
   version: "v1.0",
   maxRepositories: 10,
   sidebarWidth: {
